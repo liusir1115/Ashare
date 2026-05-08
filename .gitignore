@@ -1,0 +1,22 @@
+# Python cache
+__pycache__/
+*.py[cod]
+
+# Local logs
+*.log
+
+# Environment files
+.env
+.env.local
+.env.*
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+
+# Local result outputs
+result/*.xlsx
+result/*.md
+
+# Runtime folders
+.pytest_cache/

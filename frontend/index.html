@@ -1,0 +1,499 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>A 股智能选股工作台</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="主导航">
+        <div class="brand">
+          <div class="brand-mark">A</div>
+          <div>
+            <strong>Ashare Pilot</strong>
+            <span>智能选股工作台</span>
+          </div>
+        </div>
+        <nav class="nav-list">
+          <a class="nav-item active" href="#dashboard" data-nav="dashboard">工作台</a>
+          <a class="nav-item" href="#screener" data-nav="screener">选股配置</a>
+          <a class="nav-item" href="#results" data-nav="results">排序结果</a>
+          <a class="nav-item" href="#history" data-nav="history">历史结果</a>
+        </nav>
+        <div class="sidebar-status">
+          <span class="status-dot ok"></span>
+          <div>
+            <strong>数据健康</strong>
+            <span>主链路可用，增强维度按需降级</span>
+          </div>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow">2026-05-05 · Asia/Shanghai</p>
+            <h1>盘前 / 盘后智能选股</h1>
+          </div>
+          <div class="topbar-actions">
+            <div class="segmented" role="group" aria-label="模式切换">
+              <button class="segment active" type="button" data-mode-button="pre">盘前</button>
+              <button class="segment" type="button" data-mode-button="post">盘后</button>
+            </div>
+            <button class="icon-button" type="button" data-export="excel" title="导出 Excel">XLS</button>
+            <button class="icon-button" type="button" data-export="markdown" title="导出 Markdown">MD</button>
+          </div>
+        </header>
+
+        <section class="view-section" id="dashboard" data-section="dashboard">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Dashboard</p>
+              <h2>今日工作台</h2>
+            </div>
+            <button class="primary-button" type="button" data-jump="screener">开始配置</button>
+          </div>
+
+          <div class="metric-grid">
+            <article class="metric-card">
+              <span>当前模式</span>
+              <strong data-mode-title>盘前预判</strong>
+              <p data-mode-summary>优先观察新闻催化、板块热度与题材扩散，寻找开盘前值得跟踪的候选池。</p>
+            </article>
+            <article class="metric-card">
+              <span>第一轮筛选</span>
+              <strong data-first-round-metric>--</strong>
+              <p>基于日线、成交、换手、市值与趋势条件生成初步股票池。</p>
+            </article>
+            <article class="metric-card">
+              <span>第二轮展示</span>
+              <strong data-final-round-metric>--</strong>
+              <p>规则评分生成排序，展示可跟踪标的与风险提示。</p>
+            </article>
+            <article class="metric-card warning">
+              <span>降级提示</span>
+              <strong data-degrade-title>等待执行</strong>
+              <p data-degrade-text>未执行筛选前，页面仅展示默认状态。运行后会同步更新缓存命中、增强计算和降级信息。</p>
+            </article>
+          </div>
+
+          <div class="dashboard-grid">
+            <section class="panel market-panel">
+              <div class="panel-head">
+                <h3 data-brief-title>今日重点新闻</h3>
+                <span class="panel-tag" data-brief-updated>获取中</span>
+              </div>
+              <div class="brief-list" data-brief-list>
+                <article>
+                  <strong>正在拉取新闻简报</strong>
+                  <p>页面加载后会从 AKShare 新闻接口获取当日重点内容，这部分不会随着盘前 / 盘后模式切换而改变。</p>
+                </article>
+              </div>
+            </section>
+
+            <section class="panel focus-panel">
+              <div class="panel-head">
+                <h3>模式权重侧重</h3>
+                <span class="panel-tag" data-weight-tag>预期判断</span>
+              </div>
+              <div class="weight-stack" data-weight-list></div>
+            </section>
+
+            <section class="panel status-panel">
+              <div class="panel-head">
+                <h3>数据源状态</h3>
+                <span class="panel-tag" data-trade-date>交易日 2026-05-05</span>
+              </div>
+              <div class="source-list" data-source-list>
+                <div class="source-row"><span class="status-dot ok"></span><strong>AKShare 行情</strong><em>待检测</em></div>
+                <div class="source-row"><span class="status-dot ok"></span><strong>历史 K 线增强</strong><em>按需执行</em></div>
+                <div class="source-row"><span class="status-dot warn"></span><strong>行业 / 概念映射</strong><em>暂未接入</em></div>
+                <div class="source-row"><span class="status-dot warn"></span><strong>筹码集中度</strong><em>暂未接入</em></div>
+                <div class="source-row"><span class="status-dot off"></span><strong>核心数据缺失</strong><em>未触发</em></div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view-section" id="screener" data-section="screener">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">First Round</p>
+              <h2>第一轮技术硬筛配置</h2>
+            </div>
+            <div class="button-row">
+              <button class="secondary-button" type="button" data-load-history>载入最近一次</button>
+              <button class="primary-button" type="button" data-run-screen>开始筛选</button>
+            </div>
+          </div>
+
+          <div class="screener-layout">
+            <section class="panel condition-panel">
+              <div class="panel-head">
+                <h3>模式与范围</h3>
+                <span class="panel-tag">结构化输入</span>
+              </div>
+              <div class="form-grid">
+                <label>
+                  <span>股票范围</span>
+                  <select data-field="market_scope">
+                    <option value="沪深主板 + 创业板">沪深主板 + 创业板</option>
+                    <option value="沪深主板">沪深主板</option>
+                    <option value="科创板">科创板</option>
+                  </select>
+                </label>
+                <label>
+                  <span>执行深度</span>
+                  <select data-field="screen_depth">
+                    <option value="fast">快速现货筛选</option>
+                    <option value="full">两层增强筛选</option>
+                  </select>
+                </label>
+              </div>
+              <div class="exclude-strip">
+                <label><input type="checkbox" data-field="exclude_st" checked /> ST / *ST</label>
+                <label><input type="checkbox" data-field="exclude_paused" checked /> 停牌股</label>
+                <label><input type="checkbox" data-field="exclude_new_listing_90d" checked /> 90 天内新股</label>
+                <label><input type="checkbox" data-field="exclude_bse" checked /> 北交所</label>
+              </div>
+
+              <div class="panel-head subhead">
+                <h3>指标条件</h3>
+                <button class="ghost-button" type="button" data-add-condition>当前版本为固定指标面板</button>
+              </div>
+
+              <div class="indicator-grid">
+                <section class="control-card" data-filter="price_range" data-filter-kind="range">
+                  <div class="control-head">
+                    <strong>股价区间</strong>
+                    <span>单位：元</span>
+                  </div>
+                  <div class="range-inputs">
+                    <input type="number" step="0.1" min="0" data-bound="min" value="8" />
+                    <span class="range-separator">至</span>
+                    <input type="number" step="0.1" min="0" data-bound="max" value="35" />
+                  </div>
+                </section>
+
+                <section class="control-card" data-filter="total_market_cap" data-filter-kind="range" data-scale="100000000">
+                  <div class="control-head">
+                    <strong>总市值区间</strong>
+                    <span>单位：亿元</span>
+                  </div>
+                  <div class="range-inputs">
+                    <input type="number" step="1" min="0" data-bound="min" value="60" />
+                    <span class="range-separator">至</span>
+                    <input type="number" step="1" min="0" data-bound="max" value="450" />
+                  </div>
+                </section>
+
+                <section class="control-card" data-filter="circulating_market_cap" data-filter-kind="range" data-scale="100000000">
+                  <div class="control-head">
+                    <strong>流通市值区间</strong>
+                    <span>单位：亿元</span>
+                  </div>
+                  <div class="range-inputs">
+                    <input type="number" step="1" min="0" data-bound="min" value="40" />
+                    <span class="range-separator">至</span>
+                    <input type="number" step="1" min="0" data-bound="max" value="300" />
+                  </div>
+                </section>
+
+                <section class="control-card" data-filter="change_pct" data-filter-kind="range">
+                  <div class="control-head">
+                    <strong>涨跌幅区间</strong>
+                    <span>单位：%</span>
+                  </div>
+                  <div class="range-inputs">
+                    <input type="number" step="0.1" data-bound="min" value="-2" />
+                    <span class="range-separator">至</span>
+                    <input type="number" step="0.1" data-bound="max" value="6" />
+                  </div>
+                </section>
+
+                <section class="control-card" data-filter="rise_n_days" data-filter-kind="day-range" data-full-only="true">
+                  <div class="control-head">
+                    <strong>近 N 日涨幅区间</strong>
+                    <span>单位：天 / %</span>
+                  </div>
+                  <div class="triple-inputs">
+                    <input type="number" step="1" min="1" data-day-field="days" value="5" />
+                    <input type="number" step="0.1" data-day-field="min" value="3" />
+                    <input type="number" step="0.1" data-day-field="max" value="18" />
+                  </div>
+                </section>
+
+                <section class="control-card" data-filter="pullback_n_days" data-filter-kind="day-range" data-full-only="true">
+                  <div class="control-head">
+                    <strong>近 N 日回撤区间</strong>
+                    <span>单位：天 / %</span>
+                  </div>
+                  <div class="triple-inputs">
+                    <input type="number" step="1" min="1" data-day-field="days" value="10" />
+                    <input type="number" step="0.1" data-day-field="min" value="0" />
+                    <input type="number" step="0.1" data-day-field="max" value="12" />
+                  </div>
+                </section>
+
+                <section class="control-card" data-filter="turnover_rate" data-filter-kind="range">
+                  <div class="control-head">
+                    <strong>换手率区间</strong>
+                    <span>单位：%</span>
+                  </div>
+                  <div class="range-inputs">
+                    <input type="number" step="0.1" min="0" data-bound="min" value="3" />
+                    <span class="range-separator">至</span>
+                    <input type="number" step="0.1" min="0" data-bound="max" value="18" />
+                  </div>
+                </section>
+
+                <section class="control-card" data-filter="amount" data-filter-kind="range" data-scale="100000000">
+                  <div class="control-head">
+                    <strong>成交额区间</strong>
+                    <span>单位：亿元</span>
+                  </div>
+                  <div class="range-inputs">
+                    <input type="number" step="0.1" min="0" data-bound="min" value="2" />
+                    <span class="range-separator">至</span>
+                    <input type="number" step="0.1" min="0" data-bound="max" value="80" />
+                  </div>
+                </section>
+
+                <section class="control-card" data-filter="volume_ratio" data-filter-kind="range">
+                  <div class="control-head">
+                    <strong>量比区间</strong>
+                    <span>单位：倍</span>
+                  </div>
+                  <div class="range-inputs">
+                    <input type="number" step="0.1" min="0" data-bound="min" value="1.2" />
+                    <span class="range-separator">至</span>
+                    <input type="number" step="0.1" min="0" data-bound="max" value="3.8" />
+                  </div>
+                </section>
+
+                <section class="control-card" data-filter="amplitude" data-filter-kind="range">
+                  <div class="control-head">
+                    <strong>振幅区间</strong>
+                    <span>单位：%</span>
+                  </div>
+                  <div class="range-inputs">
+                    <input type="number" step="0.1" min="0" data-bound="min" value="2" />
+                    <span class="range-separator">至</span>
+                    <input type="number" step="0.1" min="0" data-bound="max" value="12" />
+                  </div>
+                </section>
+
+                <section class="control-card" data-filter="volume_expansion_shrink" data-filter-kind="select" data-full-only="true">
+                  <div class="control-head">
+                    <strong>持续放量 / 缩量</strong>
+                    <span>历史增强项</span>
+                  </div>
+                  <select data-select-value>
+                    <option value="">不限</option>
+                    <option value="volume_expand_2d" selected>持续放量 2 日及以上</option>
+                    <option value="volume_shrink_2d">持续缩量 2 日及以上</option>
+                  </select>
+                </section>
+
+                <section class="control-card" data-filter="ma_position" data-filter-kind="select" data-full-only="true">
+                  <div class="control-head">
+                    <strong>均线位置</strong>
+                    <span>历史增强项</span>
+                  </div>
+                  <select data-select-value>
+                    <option value="">不限</option>
+                    <option value="above_ma5_ma10" selected>收盘价站上 5 / 10 日均线</option>
+                    <option value="near_ma20">贴近 20 日均线</option>
+                  </select>
+                </section>
+
+                <section class="control-card" data-filter="ma_breakout" data-filter-kind="select" data-full-only="true">
+                  <div class="control-head">
+                    <strong>均线突破</strong>
+                    <span>历史增强项</span>
+                  </div>
+                  <select data-select-value>
+                    <option value="">不限</option>
+                    <option value="breakout_ma20" selected>突破 20 日均线</option>
+                    <option value="breakout_ma60">突破 60 日均线</option>
+                  </select>
+                </section>
+
+                <section class="control-card" data-filter="new_high_low" data-filter-kind="select" data-full-only="true">
+                  <div class="control-head">
+                    <strong>N 日新高 / 新低</strong>
+                    <span>历史增强项</span>
+                  </div>
+                  <select data-select-value>
+                    <option value="">不限</option>
+                    <option value="high_20d" selected>20 日新高</option>
+                    <option value="high_60d">60 日新高</option>
+                    <option value="low_20d">20 日新低</option>
+                  </select>
+                </section>
+
+                <section class="control-card" data-filter="consecutive_up_down" data-filter-kind="consecutive" data-full-only="true">
+                  <div class="control-head">
+                    <strong>连续上涨 / 下跌</strong>
+                    <span>单位：天</span>
+                  </div>
+                  <div class="quad-inputs">
+                    <select data-consecutive-field="direction">
+                      <option value="up" selected>连续上涨</option>
+                      <option value="down">连续下跌</option>
+                    </select>
+                    <input type="number" step="1" min="1" data-consecutive-field="min" value="2" />
+                    <input type="number" step="1" min="1" data-consecutive-field="max" value="4" />
+                  </div>
+                </section>
+
+                <section class="control-card is-disabled" data-disabled-filter>
+                  <div class="control-head">
+                    <strong>筹码集中度</strong>
+                    <span>待接入数据源</span>
+                  </div>
+                  <div class="disabled-text">当前版本不参与筛选，后续接入独立数据源后再开放。</div>
+                </section>
+
+                <section class="control-card is-disabled" data-disabled-filter>
+                  <div class="control-head">
+                    <strong>所属行业 / 概念</strong>
+                    <span>待接入映射</span>
+                  </div>
+                  <div class="disabled-text">当前版本不参与筛选，结果页会先展示映射待接入状态。</div>
+                </section>
+
+                <section class="control-card">
+                  <div class="control-head">
+                    <strong>基础排除条件组合</strong>
+                    <span>规则模板</span>
+                  </div>
+                  <select data-field="exclude_template">
+                    <option value="default">全部默认排除</option>
+                    <option value="minimal">仅排除 ST 与停牌</option>
+                  </select>
+                </section>
+              </div>
+            </section>
+
+            <aside class="panel assist-panel">
+              <div class="panel-head">
+                <h3>策略优化</h3>
+                <span class="panel-tag" data-strategy-state>可执行</span>
+              </div>
+              <div class="notice-list">
+                <article class="notice ok">
+                  <strong>输入已结构化</strong>
+                  <p>所有参与筛选的输入项都会以数值或枚举方式提交，避免文本混输带来的歧义。</p>
+                </article>
+                <article class="notice warn">
+                  <strong>增强模式耗时更长</strong>
+                  <p>开启两层增强筛选后，会额外拉取候选股票历史 K 线并计算趋势指标。</p>
+                </article>
+                <article class="notice danger">
+                  <strong>待接入条件未生效</strong>
+                  <p>行业 / 概念与筹码集中度暂不参与当前版本的后端筛选逻辑。</p>
+                </article>
+              </div>
+              <div class="condition-list" data-condition-summary>
+                <h4>当前条件摘要</h4>
+              </div>
+              <div class="button-row stretch">
+                <button class="secondary-button" type="button" data-reset-form>重置条件</button>
+                <button class="primary-button" type="button" data-run-screen>执行筛选</button>
+              </div>
+            </aside>
+          </div>
+        </section>
+
+        <section class="view-section" id="results" data-section="results">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Second Round</p>
+              <h2>排序结果</h2>
+            </div>
+            <div class="button-row">
+              <button class="secondary-button" type="button" data-view-full>查看完整榜单</button>
+              <button class="primary-button" type="button" data-jump="screener">调整条件</button>
+            </div>
+          </div>
+
+          <div class="result-summary">
+            <div><span>模式</span><strong data-result-mode>盘前预判</strong></div>
+            <div><span>股票范围</span><strong data-result-scope>沪深主板 + 创业板</strong></div>
+            <div><span>条件摘要</span><strong data-result-filter-summary>价格 / 成交额 / 换手 / 振幅 / 量比</strong></div>
+            <div><span>第一轮命中</span><strong data-result-first-round>--</strong></div>
+            <div><span>最终展示</span><strong data-result-final-round>--</strong></div>
+            <div><span>数据说明</span><strong data-result-source-meta>等待执行</strong></div>
+          </div>
+
+          <section class="panel table-panel">
+            <div class="panel-head">
+              <h3>候选股票榜单</h3>
+              <span class="panel-tag">100 分制</span>
+            </div>
+            <div class="loading-strip" data-loading-strip hidden>
+              <div class="loading-meta">
+                <strong data-loading-title>正在拉取行情数据</strong>
+                <span data-loading-text>已启动请求，等待 AKShare 返回市场快照...</span>
+              </div>
+              <div class="loading-bar" aria-hidden="true">
+                <div class="loading-bar-fill" data-loading-fill></div>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>排名</th>
+                    <th>分数</th>
+                    <th>优先级</th>
+                    <th>股票</th>
+                    <th>行业 / 概念</th>
+                    <th>第一轮摘要</th>
+                    <th>第二轮核心理由</th>
+                    <th>风险点</th>
+                    <th>详情</th>
+                  </tr>
+                </thead>
+                <tbody id="resultRows"></tbody>
+              </table>
+            </div>
+          </section>
+        </section>
+
+        <section class="view-section muted-section" id="history" data-section="history">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">History</p>
+              <h2>历史结果</h2>
+            </div>
+            <button class="secondary-button" type="button" data-refresh-history>刷新列表</button>
+          </div>
+          <section class="panel">
+            <div class="history-list" data-history-list>
+              <article>
+                <strong>等待加载</strong>
+                <span>执行一次筛选后，会自动生成本地 xlsx 结果并出现在这里。</span>
+                <button type="button" disabled>打开</button>
+              </article>
+            </div>
+          </section>
+        </section>
+      </main>
+    </div>
+
+    <div class="drawer-backdrop" data-close-drawer></div>
+    <aside class="detail-drawer" aria-label="个股详情">
+      <button class="drawer-close" type="button" data-close-drawer>×</button>
+      <div id="drawerContent"></div>
+    </aside>
+
+    <div class="toast" role="status" aria-live="polite"></div>
+
+    <script src="./app.js"></script>
+    <script src="./api-bridge.js"></script>
+  </body>
+</html>
