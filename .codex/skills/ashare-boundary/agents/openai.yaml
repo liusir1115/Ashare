@@ -1,0 +1,4 @@
+interface:
+  display_name: "Ashare Boundary"
+  short_description: "Project guardrails for Ashare development work."
+  default_prompt: "Use $ashare-boundary to plan or implement Ashare changes within the agreed product and architecture boundaries."
