@@ -77,6 +77,8 @@ Avoid broad rewrites in shared files.
 - Do not commit local logs
 - Do not commit generated Excel results unless explicitly requested
 - Mark external-data failures clearly instead of fabricating fallback facts
+- Do not leave runtime caches, temporary validation scripts, or one-off diagnostics mixed into the main product paths after their purpose is complete
+- Archive dormant-but-possibly-useful helper files into an explicit archive area instead of keeping them beside active production files
 
 ## 8. LLM Boundary
 
@@ -98,3 +100,30 @@ If a proposed change is outside the current scope, do one of these:
 1. reject it for the current cycle
 2. move it to a later-phase note in `docs/`
 3. ask for an explicit scope expansion before implementing
+
+## 11. Reporting Rule
+
+After each completed development step, provide a structured update that helps the user audit progress.
+
+The update should cover:
+
+- changed files
+- new files
+- untouched critical files
+- structural effect on the repository
+- actual functional changes versus placeholder scaffolding
+- next step recommendation
+
+The goal is to make every iteration easy to review even for a non-expert collaborator.
+
+## 12. Cleanup Rule
+
+Repository cleanliness is part of the delivery contract.
+
+- Prefer deleting runtime garbage over preserving it
+- Prefer archiving dormant helpers over leaving them in active directories
+- Keep active directories focused on current product logic
+- When cleanup is performed, distinguish:
+  - deleted runtime garbage
+  - archived helper material
+  - untouched core product files

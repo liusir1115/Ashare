@@ -63,6 +63,9 @@ Prefer this shape:
 - Do not refactor unrelated premarket code unless the task explicitly requires it
 - Do not delete or rewrite coworker work without approval
 - Preserve the visual language of the existing product
+- Clean temporary scripts, runtime garbage, local logs, caches, and one-off experiment files on a regular basis
+- If a file is not current-core but may still be useful later, move it into an explicit archive folder instead of leaving it mixed into the main flow
+- Prefer a minimal working tree: keep the smallest set of files needed to understand, run, and extend the current product
 
 ## Collaboration Rules
 
@@ -71,6 +74,19 @@ Prefer this shape:
 - Keep commits focused and reversible
 - Do not commit local environment noise, proxy settings, logs, or generated spreadsheets
 - Surface conflicts early instead of silently working around them
+- Treat repository cleanliness as part of product quality, not optional polish
+
+## Change Reporting Rules
+
+After each meaningful implementation step, provide a concise project-update report that includes:
+
+- which files were added, changed, or intentionally left untouched
+- what structural impact the change had on the codebase
+- which user-visible behavior changed
+- which logic was placeholder only versus actually functional
+- what the next recommended step is
+
+When code changes are non-trivial, explain them in file-level terms so the user can track progress without reading the entire diff first.
 
 ## Execution Workflow
 
@@ -80,6 +96,8 @@ Prefer this shape:
 4. Prefer additive implementation with minimal shared-file edits
 5. Validate behavior locally
 6. Summarize what changed, why it belongs in scope, and any remaining risks
+7. Report the latest code structure and important code changes in a user-trackable format
+8. During cleanup work, explicitly separate deleted runtime garbage, archived helper files, and preserved core files
 
 ## References
 

@@ -15,8 +15,11 @@ __pycache__/
 Thumbs.db
 
 # Local result outputs
-result/*.xlsx
-result/*.md
+result/
 
 # Runtime folders
 .pytest_cache/
+akshare_backend/__pycache__/
+*.pyc.*
+akshare_backend/tushare_runtime_local.py
+akshare_backend/deepseek_runtime_local.py

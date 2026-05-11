@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>A 股智能选股工作台</title>
+    <title>Ashare 智能交易工作台</title>
     <link rel="stylesheet" href="./styles.css" />
   </head>
   <body>
@@ -12,21 +12,24 @@
         <div class="brand">
           <div class="brand-mark">A</div>
           <div>
-            <strong>Ashare Pilot</strong>
-            <span>智能选股工作台</span>
+            <strong>Ashare</strong>
+            <span>盘前选股与盘后复盘</span>
           </div>
         </div>
+
         <nav class="nav-list">
-          <a class="nav-item active" href="#dashboard" data-nav="dashboard">工作台</a>
-          <a class="nav-item" href="#screener" data-nav="screener">选股配置</a>
-          <a class="nav-item" href="#results" data-nav="results">排序结果</a>
-          <a class="nav-item" href="#history" data-nav="history">历史结果</a>
+          <a class="nav-item active" href="#dashboard" data-nav="dashboard" data-mode-scope="both">工作台</a>
+          <a class="nav-item" href="#screener" data-nav="screener" data-mode-scope="pre">选股配置</a>
+          <a class="nav-item" href="#results" data-nav="results" data-mode-scope="pre">排序结果</a>
+          <a class="nav-item is-hidden" href="#postclose-review" data-nav="postclose-review" data-mode-scope="post">盘后复盘</a>
+          <a class="nav-item" href="#history" data-nav="history" data-mode-scope="both">历史结果</a>
         </nav>
+
         <div class="sidebar-status">
           <span class="status-dot ok"></span>
           <div>
-            <strong>数据健康</strong>
-            <span>主链路可用，增强维度按需降级</span>
+            <strong>数据状态</strong>
+            <span>主链路可用，异常时会显示真实数据缺口</span>
           </div>
         </div>
       </aside>
@@ -34,8 +37,8 @@
       <main class="main">
         <header class="topbar">
           <div>
-            <p class="eyebrow">2026-05-05 · Asia/Shanghai</p>
-            <h1>盘前 / 盘后智能选股</h1>
+            <p class="eyebrow">Asia/Shanghai · Local Demo</p>
+            <h1>A 股智能交易工作台</h1>
           </div>
           <div class="topbar-actions">
             <div class="segmented" role="group" aria-label="模式切换">
@@ -53,33 +56,33 @@
               <p class="eyebrow">Dashboard</p>
               <h2>今日工作台</h2>
             </div>
-            <button class="primary-button" type="button" data-jump="screener">开始配置</button>
+            <button class="primary-button" type="button" data-jump-target data-jump-pre="screener" data-jump-post="postclose-review">进入主流程</button>
           </div>
 
-          <div class="metric-grid">
+          <div class="metric-grid" data-mode-panel="pre">
             <article class="metric-card">
-              <span>当前模式</span>
+              <span>模式概览</span>
               <strong data-mode-title>盘前预判</strong>
-              <p data-mode-summary>优先观察新闻催化、板块热度与题材扩散，寻找开盘前值得跟踪的候选池。</p>
+              <p data-mode-summary>优先观察新闻催化、板块热度与题材扩散，生成当日候选池。</p>
             </article>
             <article class="metric-card">
-              <span>第一轮筛选</span>
+              <span>第一轮筛出</span>
               <strong data-first-round-metric>--</strong>
-              <p>基于日线、成交、换手、市值与趋势条件生成初步股票池。</p>
+              <p>按日线、成交额、换手、量比与市场范围条件筛出初始股票池。</p>
             </article>
             <article class="metric-card">
-              <span>第二轮展示</span>
+              <span>最终展示</span>
               <strong data-final-round-metric>--</strong>
-              <p>规则评分生成排序，展示可跟踪标的与风险提示。</p>
+              <p>基于规则评分排序，输出前十名及理由与风险提示。</p>
             </article>
             <article class="metric-card warning">
-              <span>降级提示</span>
+              <span>执行状态</span>
               <strong data-degrade-title>等待执行</strong>
-              <p data-degrade-text>未执行筛选前，页面仅展示默认状态。运行后会同步更新缓存命中、增强计算和降级信息。</p>
+              <p data-degrade-text>执行后这里会更新缓存命中、增强计算和链路状态。</p>
             </article>
           </div>
 
-          <div class="dashboard-grid">
+          <div class="dashboard-grid" data-mode-panel="pre">
             <section class="panel market-panel">
               <div class="panel-head">
                 <h3 data-brief-title>今日重点新闻</h3>
@@ -87,15 +90,15 @@
               </div>
               <div class="brief-list" data-brief-list>
                 <article>
-                  <strong>正在拉取新闻简报</strong>
-                  <p>页面加载后会从 AKShare 新闻接口获取当日重点内容，这部分不会随着盘前 / 盘后模式切换而改变。</p>
+                  <strong>正在加载新闻摘要</strong>
+                  <p>页面会优先请求当前新闻接口，并在接口异常时明确提示，不返回演示数据。</p>
                 </article>
               </div>
             </section>
 
             <section class="panel focus-panel">
               <div class="panel-head">
-                <h3>模式权重侧重</h3>
+                <h3>模式侧重点</h3>
                 <span class="panel-tag" data-weight-tag>预期判断</span>
               </div>
               <div class="weight-stack" data-weight-list></div>
@@ -104,27 +107,60 @@
             <section class="panel status-panel">
               <div class="panel-head">
                 <h3>数据源状态</h3>
-                <span class="panel-tag" data-trade-date>交易日 2026-05-05</span>
+                <span class="panel-tag" data-trade-date>交易日待确认</span>
               </div>
               <div class="source-list" data-source-list>
-                <div class="source-row"><span class="status-dot ok"></span><strong>AKShare 行情</strong><em>待检测</em></div>
+                <div class="source-row"><span class="status-dot ok"></span><strong>Tushare 行情</strong><em>待检测</em></div>
                 <div class="source-row"><span class="status-dot ok"></span><strong>历史 K 线增强</strong><em>按需执行</em></div>
-                <div class="source-row"><span class="status-dot warn"></span><strong>行业 / 概念映射</strong><em>暂未接入</em></div>
-                <div class="source-row"><span class="status-dot warn"></span><strong>筹码集中度</strong><em>暂未接入</em></div>
-                <div class="source-row"><span class="status-dot off"></span><strong>核心数据缺失</strong><em>未触发</em></div>
+                <div class="source-row"><span class="status-dot warn"></span><strong>行业 / 概念映射</strong><em>待补齐</em></div>
+                <div class="source-row"><span class="status-dot ok"></span><strong>筹码结构</strong><em>已接入日级筹码代理指标</em></div>
+                <div class="source-row"><span class="status-dot off"></span><strong>硬缺口提示</strong><em>未触发</em></div>
+              </div>
+            </section>
+          </div>
+
+          <div class="postclose-dashboard-grid is-hidden" data-mode-panel="post">
+            <section class="panel postclose-hero-panel">
+              <div class="postclose-hero">
+                <div class="postclose-hero-copy">
+                  <p class="eyebrow">Postclose Review</p>
+                  <h2>先完成市场总复盘，再下钻到持仓与操作</h2>
+                  <p data-post-dashboard-text>盘后模式会先生成一份正式市场复盘，再进入持仓复盘与操作复盘。</p>
+                </div>
+                <div class="postclose-hero-signal">
+                  <span>当前状态</span>
+                  <strong data-post-dashboard-title>等待生成市场复盘</strong>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel postclose-dashboard-quicklook">
+              <div class="panel-head">
+                <h3>盘后快照</h3>
+                <span class="panel-tag">市场总览</span>
+              </div>
+              <div class="brief-list">
+                <article>
+                  <strong>先生成市场总复盘</strong>
+                  <p>生成后这里会同步更新总收口、主线线索和次日执行重点。</p>
+                </article>
+                <article>
+                  <strong>持仓与操作依赖市场上下文</strong>
+                  <p>市场判断先行，个体判断后置，避免脱离环境去评价持仓和交易动作。</p>
+                </article>
               </div>
             </section>
           </div>
         </section>
 
-        <section class="view-section" id="screener" data-section="screener">
+        <section class="view-section" id="screener" data-section="screener" data-mode-scope="pre">
           <div class="section-head">
             <div>
               <p class="eyebrow">First Round</p>
               <h2>第一轮技术硬筛配置</h2>
             </div>
             <div class="button-row">
-              <button class="secondary-button" type="button" data-load-history>载入最近一次</button>
+              <button class="secondary-button" type="button" data-load-history>刷新历史</button>
               <button class="primary-button" type="button" data-run-screen>开始筛选</button>
             </div>
           </div>
@@ -152,6 +188,7 @@
                   </select>
                 </label>
               </div>
+
               <div class="exclude-strip">
                 <label><input type="checkbox" data-field="exclude_st" checked /> ST / *ST</label>
                 <label><input type="checkbox" data-field="exclude_paused" checked /> 停牌股</label>
@@ -159,9 +196,32 @@
                 <label><input type="checkbox" data-field="exclude_bse" checked /> 北交所</label>
               </div>
 
+              <div class="postclose-llm-hint premarket-strategy-box">
+                <span>自然语言策略</span>
+                <strong data-strategy-llm-status>输入一句策略描述，系统会尝试翻译成量化筛选条件。</strong>
+                <textarea
+                  rows="3"
+                  data-strategy-query
+                  placeholder="例如：给我一个反转策略；缩量回调后放量突破；找近20日新高且量比放大的票"
+                ></textarea>
+                <div class="button-row">
+                  <button class="secondary-button" type="button" data-strategy-clear>清空策略</button>
+                  <button class="primary-button" type="button" data-strategy-parse>生成筛选条件</button>
+                </div>
+                <div class="condition-list" data-strategy-notes>
+                  <h4>解析说明</h4>
+                </div>
+                <div class="condition-list" data-strategy-mapping>
+                  <h4>映射词与指标</h4>
+                </div>
+                <div class="condition-list" data-strategy-conditions>
+                  <h4>量化后的条件</h4>
+                </div>
+              </div>
+
               <div class="panel-head subhead">
                 <h3>指标条件</h3>
-                <button class="ghost-button" type="button" data-add-condition>当前版本为固定指标面板</button>
+                <button class="ghost-button" type="button" data-add-condition>当前版本使用固定指标面板</button>
               </div>
 
               <div class="indicator-grid">
@@ -171,9 +231,9 @@
                     <span>单位：元</span>
                   </div>
                   <div class="range-inputs">
-                    <input type="number" step="0.1" min="0" data-bound="min" value="8" />
+                    <input type="number" step="0.1" min="0" data-bound="min" value="" placeholder="最小价格" />
                     <span class="range-separator">至</span>
-                    <input type="number" step="0.1" min="0" data-bound="max" value="35" />
+                    <input type="number" step="0.1" min="0" data-bound="max" value="" placeholder="最大价格" />
                   </div>
                 </section>
 
@@ -183,9 +243,9 @@
                     <span>单位：亿元</span>
                   </div>
                   <div class="range-inputs">
-                    <input type="number" step="1" min="0" data-bound="min" value="60" />
+                    <input type="number" step="1" min="0" data-bound="min" value="" placeholder="最小市值(亿)" />
                     <span class="range-separator">至</span>
-                    <input type="number" step="1" min="0" data-bound="max" value="450" />
+                    <input type="number" step="1" min="0" data-bound="max" value="" placeholder="最大市值(亿)" />
                   </div>
                 </section>
 
@@ -195,9 +255,9 @@
                     <span>单位：亿元</span>
                   </div>
                   <div class="range-inputs">
-                    <input type="number" step="1" min="0" data-bound="min" value="40" />
+                    <input type="number" step="1" min="0" data-bound="min" value="" placeholder="最小流通市值(亿)" />
                     <span class="range-separator">至</span>
-                    <input type="number" step="1" min="0" data-bound="max" value="300" />
+                    <input type="number" step="1" min="0" data-bound="max" value="" placeholder="最大流通市值(亿)" />
                   </div>
                 </section>
 
@@ -207,9 +267,9 @@
                     <span>单位：%</span>
                   </div>
                   <div class="range-inputs">
-                    <input type="number" step="0.1" data-bound="min" value="-2" />
+                    <input type="number" step="0.1" data-bound="min" value="" placeholder="最小涨跌幅" />
                     <span class="range-separator">至</span>
-                    <input type="number" step="0.1" data-bound="max" value="6" />
+                    <input type="number" step="0.1" data-bound="max" value="" placeholder="最大涨跌幅" />
                   </div>
                 </section>
 
@@ -219,9 +279,9 @@
                     <span>单位：天 / %</span>
                   </div>
                   <div class="triple-inputs">
-                    <input type="number" step="1" min="1" data-day-field="days" value="5" />
-                    <input type="number" step="0.1" data-day-field="min" value="3" />
-                    <input type="number" step="0.1" data-day-field="max" value="18" />
+                    <input type="number" step="1" min="1" data-day-field="days" value="" placeholder="天数" />
+                    <input type="number" step="0.1" data-day-field="min" value="" placeholder="最小%" />
+                    <input type="number" step="0.1" data-day-field="max" value="" placeholder="最大%" />
                   </div>
                 </section>
 
@@ -231,9 +291,9 @@
                     <span>单位：天 / %</span>
                   </div>
                   <div class="triple-inputs">
-                    <input type="number" step="1" min="1" data-day-field="days" value="10" />
-                    <input type="number" step="0.1" data-day-field="min" value="0" />
-                    <input type="number" step="0.1" data-day-field="max" value="12" />
+                    <input type="number" step="1" min="1" data-day-field="days" value="" placeholder="天数" />
+                    <input type="number" step="0.1" data-day-field="min" value="" placeholder="最小%" />
+                    <input type="number" step="0.1" data-day-field="max" value="" placeholder="最大%" />
                   </div>
                 </section>
 
@@ -243,9 +303,9 @@
                     <span>单位：%</span>
                   </div>
                   <div class="range-inputs">
-                    <input type="number" step="0.1" min="0" data-bound="min" value="3" />
+                    <input type="number" step="0.1" min="0" data-bound="min" value="" placeholder="最小换手率" />
                     <span class="range-separator">至</span>
-                    <input type="number" step="0.1" min="0" data-bound="max" value="18" />
+                    <input type="number" step="0.1" min="0" data-bound="max" value="" placeholder="最大换手率" />
                   </div>
                 </section>
 
@@ -255,9 +315,9 @@
                     <span>单位：亿元</span>
                   </div>
                   <div class="range-inputs">
-                    <input type="number" step="0.1" min="0" data-bound="min" value="2" />
+                    <input type="number" step="0.1" min="0" data-bound="min" value="" placeholder="最小成交额(亿)" />
                     <span class="range-separator">至</span>
-                    <input type="number" step="0.1" min="0" data-bound="max" value="80" />
+                    <input type="number" step="0.1" min="0" data-bound="max" value="" placeholder="最大成交额(亿)" />
                   </div>
                 </section>
 
@@ -267,9 +327,9 @@
                     <span>单位：倍</span>
                   </div>
                   <div class="range-inputs">
-                    <input type="number" step="0.1" min="0" data-bound="min" value="1.2" />
+                    <input type="number" step="0.1" min="0" data-bound="min" value="" placeholder="最小量比" />
                     <span class="range-separator">至</span>
-                    <input type="number" step="0.1" min="0" data-bound="max" value="3.8" />
+                    <input type="number" step="0.1" min="0" data-bound="max" value="" placeholder="最大量比" />
                   </div>
                 </section>
 
@@ -279,20 +339,56 @@
                     <span>单位：%</span>
                   </div>
                   <div class="range-inputs">
-                    <input type="number" step="0.1" min="0" data-bound="min" value="2" />
+                    <input type="number" step="0.1" min="0" data-bound="min" value="" placeholder="最小振幅" />
                     <span class="range-separator">至</span>
-                    <input type="number" step="0.1" min="0" data-bound="max" value="12" />
+                    <input type="number" step="0.1" min="0" data-bound="max" value="" placeholder="最大振幅" />
+                  </div>
+                </section>
+
+                <section class="control-card" data-filter="chip_concentration" data-filter-kind="range">
+                  <div class="control-head">
+                    <strong>筹码集中度</strong>
+                    <span>单位：%</span>
+                  </div>
+                  <div class="range-inputs">
+                    <input type="number" step="0.1" min="0" data-bound="min" value="" placeholder="越低越集中" />
+                    <span class="range-separator">至</span>
+                    <input type="number" step="0.1" min="0" data-bound="max" value="" placeholder="如 18" />
+                  </div>
+                </section>
+
+                <section class="control-card" data-filter="winner_rate" data-filter-kind="range">
+                  <div class="control-head">
+                    <strong>获利盘比例</strong>
+                    <span>单位：%</span>
+                  </div>
+                  <div class="range-inputs">
+                    <input type="number" step="0.1" min="0" data-bound="min" value="" placeholder="如 35" />
+                    <span class="range-separator">至</span>
+                    <input type="number" step="0.1" min="0" data-bound="max" value="" placeholder="如 75" />
+                  </div>
+                </section>
+
+                <section class="control-card" data-filter="price_vs_chip" data-filter-kind="range">
+                  <div class="control-head">
+                    <strong>现价相对筹码成本</strong>
+                    <span>单位：%</span>
+                  </div>
+                  <div class="range-inputs">
+                    <input type="number" step="0.1" data-bound="min" value="" placeholder="如 -5" />
+                    <span class="range-separator">至</span>
+                    <input type="number" step="0.1" data-bound="max" value="" placeholder="如 8" />
                   </div>
                 </section>
 
                 <section class="control-card" data-filter="volume_expansion_shrink" data-filter-kind="select" data-full-only="true">
                   <div class="control-head">
                     <strong>持续放量 / 缩量</strong>
-                    <span>历史增强项</span>
+                    <span>增强条件</span>
                   </div>
                   <select data-select-value>
                     <option value="">不限</option>
-                    <option value="volume_expand_2d" selected>持续放量 2 日及以上</option>
+                    <option value="volume_expand_2d">持续放量 2 日及以上</option>
                     <option value="volume_shrink_2d">持续缩量 2 日及以上</option>
                   </select>
                 </section>
@@ -300,11 +396,11 @@
                 <section class="control-card" data-filter="ma_position" data-filter-kind="select" data-full-only="true">
                   <div class="control-head">
                     <strong>均线位置</strong>
-                    <span>历史增强项</span>
+                    <span>增强条件</span>
                   </div>
                   <select data-select-value>
                     <option value="">不限</option>
-                    <option value="above_ma5_ma10" selected>收盘价站上 5 / 10 日均线</option>
+                    <option value="above_ma5_ma10">收盘价站上 5 / 10 日均线</option>
                     <option value="near_ma20">贴近 20 日均线</option>
                   </select>
                 </section>
@@ -312,11 +408,11 @@
                 <section class="control-card" data-filter="ma_breakout" data-filter-kind="select" data-full-only="true">
                   <div class="control-head">
                     <strong>均线突破</strong>
-                    <span>历史增强项</span>
+                    <span>增强条件</span>
                   </div>
                   <select data-select-value>
                     <option value="">不限</option>
-                    <option value="breakout_ma20" selected>突破 20 日均线</option>
+                    <option value="breakout_ma20">突破 20 日均线</option>
                     <option value="breakout_ma60">突破 60 日均线</option>
                   </select>
                 </section>
@@ -324,11 +420,11 @@
                 <section class="control-card" data-filter="new_high_low" data-filter-kind="select" data-full-only="true">
                   <div class="control-head">
                     <strong>N 日新高 / 新低</strong>
-                    <span>历史增强项</span>
+                    <span>增强条件</span>
                   </div>
                   <select data-select-value>
                     <option value="">不限</option>
-                    <option value="high_20d" selected>20 日新高</option>
+                    <option value="high_20d">20 日新高</option>
                     <option value="high_60d">60 日新高</option>
                     <option value="low_20d">20 日新低</option>
                   </select>
@@ -336,7 +432,7 @@
 
                 <section class="control-card" data-filter="consecutive_up_down" data-filter-kind="consecutive" data-full-only="true">
                   <div class="control-head">
-                    <strong>连续上涨 / 下跌</strong>
+                    <strong>连续涨跌</strong>
                     <span>单位：天</span>
                   </div>
                   <div class="quad-inputs">
@@ -344,31 +440,15 @@
                       <option value="up" selected>连续上涨</option>
                       <option value="down">连续下跌</option>
                     </select>
-                    <input type="number" step="1" min="1" data-consecutive-field="min" value="2" />
-                    <input type="number" step="1" min="1" data-consecutive-field="max" value="4" />
+                    <input type="number" step="1" min="1" data-consecutive-field="min" value="" placeholder="最少天数" />
+                    <input type="number" step="1" min="1" data-consecutive-field="max" value="" placeholder="最多天数" />
                   </div>
                 </section>
 
-                <section class="control-card is-disabled" data-disabled-filter>
+                <section class="control-card" data-filter="exclude_template" data-filter-kind="select">
                   <div class="control-head">
-                    <strong>筹码集中度</strong>
-                    <span>待接入数据源</span>
-                  </div>
-                  <div class="disabled-text">当前版本不参与筛选，后续接入独立数据源后再开放。</div>
-                </section>
-
-                <section class="control-card is-disabled" data-disabled-filter>
-                  <div class="control-head">
-                    <strong>所属行业 / 概念</strong>
-                    <span>待接入映射</span>
-                  </div>
-                  <div class="disabled-text">当前版本不参与筛选，结果页会先展示映射待接入状态。</div>
-                </section>
-
-                <section class="control-card">
-                  <div class="control-head">
-                    <strong>基础排除条件组合</strong>
-                    <span>规则模板</span>
+                    <strong>排除模板</strong>
+                    <span>便捷切换</span>
                   </div>
                   <select data-field="exclude_template">
                     <option value="default">全部默认排除</option>
@@ -386,15 +466,15 @@
               <div class="notice-list">
                 <article class="notice ok">
                   <strong>输入已结构化</strong>
-                  <p>所有参与筛选的输入项都会以数值或枚举方式提交，避免文本混输带来的歧义。</p>
+                  <p>当前版本优先使用数值和枚举输入，先把硬筛链路稳定跑通。</p>
                 </article>
                 <article class="notice warn">
-                  <strong>增强模式耗时更长</strong>
-                  <p>开启两层增强筛选后，会额外拉取候选股票历史 K 线并计算趋势指标。</p>
+                  <strong>增强模式更耗时</strong>
+                  <p>开启两层增强筛选后，会额外读取候选股票的历史 K 线并计算扩展指标。</p>
                 </article>
                 <article class="notice danger">
-                  <strong>待接入条件未生效</strong>
-                  <p>行业 / 概念与筹码集中度暂不参与当前版本的后端筛选逻辑。</p>
+                  <strong>部分高级维度仍待接入</strong>
+                  <p>行业映射与筹码结构暂未纳入本轮筛选逻辑，界面会明确标注。</p>
                 </article>
               </div>
               <div class="condition-list" data-condition-summary>
@@ -408,7 +488,7 @@
           </div>
         </section>
 
-        <section class="view-section" id="results" data-section="results">
+        <section class="view-section" id="results" data-section="results" data-mode-scope="pre">
           <div class="section-head">
             <div>
               <p class="eyebrow">Second Round</p>
@@ -437,7 +517,7 @@
             <div class="loading-strip" data-loading-strip hidden>
               <div class="loading-meta">
                 <strong data-loading-title>正在拉取行情数据</strong>
-                <span data-loading-text>已启动请求，等待 AKShare 返回市场快照...</span>
+                <span data-loading-text>已启动请求，等待 Tushare 返回市场快照...</span>
               </div>
               <div class="loading-bar" aria-hidden="true">
                 <div class="loading-bar-fill" data-loading-fill></div>
@@ -453,7 +533,7 @@
                     <th>股票</th>
                     <th>行业 / 概念</th>
                     <th>第一轮摘要</th>
-                    <th>第二轮核心理由</th>
+                    <th>第二轮理由</th>
                     <th>风险点</th>
                     <th>详情</th>
                   </tr>
@@ -464,7 +544,245 @@
           </section>
         </section>
 
-        <section class="view-section muted-section" id="history" data-section="history">
+        <section class="view-section is-hidden" id="postclose-review" data-section="postclose-review" data-mode-scope="post">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Postclose Review</p>
+              <h2>盘后复盘</h2>
+            </div>
+            <div class="button-row">
+              <button class="secondary-button" type="button" data-jump="dashboard">返回工作台</button>
+              <button class="primary-button" type="button" data-postclose-generate>生成盘后复盘</button>
+            </div>
+          </div>
+
+          <div class="postclose-layout">
+            <section class="panel postclose-report-panel">
+              <div class="panel-head">
+                <h3>市场总复盘</h3>
+                <span class="panel-tag">正式简报结构</span>
+              </div>
+
+              <div class="postclose-summary-shell">
+                <div class="postclose-headline-card">
+                  <span>一句话总收口</span>
+                  <strong>这里会输出当日市场的核心判断。</strong>
+                  <p>生成后这里会优先给出环境结论，再往下展开证据层、情绪层和次日执行层。</p>
+                </div>
+
+                <div class="postclose-fact-strip">
+                  <article>
+                    <span>交易日</span>
+                    <strong data-postclose-fact-date>--</strong>
+                  </article>
+                  <article>
+                    <span>市场宽度</span>
+                    <strong data-postclose-fact-breadth>--</strong>
+                  </article>
+                  <article>
+                    <span>成交额</span>
+                    <strong data-postclose-fact-turnover>--</strong>
+                  </article>
+                  <article>
+                    <span>情绪锚点</span>
+                    <strong data-postclose-fact-emotion>--</strong>
+                  </article>
+                </div>
+
+                <div class="postclose-summary-grid">
+                  <article data-summary-card="mainline">
+                    <span>主线判断</span>
+                    <strong>等待主线判断</strong>
+                    <p>这里会收口最值得保留的主线结论。</p>
+                  </article>
+                  <article data-summary-card="rotation">
+                    <span>轮动结构</span>
+                    <strong>等待轮动判断</strong>
+                    <p>这里会拆开看次主线、承接方向与失败轮动。</p>
+                  </article>
+                  <article data-summary-card="risk">
+                    <span>风险边界</span>
+                    <strong>等待风险判断</strong>
+                    <p>这里会提示不应追逐的区域和环境约束。</p>
+                  </article>
+                  <article data-summary-card="next">
+                    <span>次日重点</span>
+                    <strong>等待次日计划</strong>
+                    <p>这里会给出可执行的观察顺序和验证条件。</p>
+                  </article>
+                </div>
+
+                <div class="postclose-evidence-list">
+                  <div data-evidence-card="breadth">
+                    <span>宽度与量能</span>
+                    <strong>指数与量能环境位</strong>
+                    <p>从上涨家数、下跌家数、平均涨跌幅和成交额判断环境强弱。</p>
+                  </div>
+                  <div data-evidence-card="flow">
+                    <span>资金与板块</span>
+                    <strong>资金主攻方向与防守方向</strong>
+                    <p>观察行业、概念资金流前排，辅助判断今日资金主攻。</p>
+                  </div>
+                  <div data-evidence-card="rotation">
+                    <span>主线与轮动</span>
+                    <strong>主线、次主线与失败轮动</strong>
+                    <p>跟踪主线是否延续，次线是否承接，以及轮动是否健康。</p>
+                  </div>
+                  <div data-evidence-card="emotion">
+                    <span>情绪与连板</span>
+                    <strong>情绪阶段、最高板与活口</strong>
+                    <p>通过涨停家数、连板结构和热点强度判断短线接力环境。</p>
+                  </div>
+                </div>
+
+                <div class="button-row">
+                  <button class="secondary-button" type="button" data-toggle-report data-target="market-report-detail">查看完整简报</button>
+                </div>
+
+                <div class="postclose-llm-hint">
+                  <span>解释状态</span>
+                  <strong data-postclose-llm-status>等待生成报告</strong>
+                </div>
+              </div>
+
+              <div class="postclose-report-shell is-hidden" id="market-report-detail">
+                <article data-report-section="close">
+                  <strong>1. 一句话总收口</strong>
+                  <p>等待生成</p>
+                </article>
+                <article data-report-section="environment">
+                  <strong>2. 盘型 / 环境</strong>
+                  <p>等待生成</p>
+                </article>
+                <article data-report-section="funds">
+                  <strong>3. 资金流证据</strong>
+                  <p>等待生成</p>
+                </article>
+                <article data-report-section="focus">
+                  <strong>4. 主线 / 次主线 / 风险边界 / 次日重点</strong>
+                  <p>等待生成</p>
+                </article>
+                <article data-report-section="rotation">
+                  <strong>5. 主线与轮动拆解</strong>
+                  <p>等待生成</p>
+                </article>
+                <article data-report-section="emotion">
+                  <strong>6. 市场情绪与连板结构</strong>
+                  <p>等待生成</p>
+                </article>
+                <article data-report-section="reason">
+                  <strong>7. 原因拆解</strong>
+                  <p>等待生成</p>
+                </article>
+                <article data-report-section="plan">
+                  <strong>8. 次日执行卡</strong>
+                  <p>等待生成</p>
+                </article>
+              </div>
+
+              <div class="postclose-source-panel">
+                <div class="postclose-source-head">
+                  <strong>数据来源与更新时间</strong>
+                  <span>这里用于确认复盘基于真实接口返回，而不是演示数据。</span>
+                </div>
+                <div class="postclose-source-grid">
+                  <article>
+                    <span>交易日</span>
+                    <strong data-source-trade-date>--</strong>
+                  </article>
+                  <article>
+                    <span>市场快照</span>
+                    <strong data-source-market>--</strong>
+                  </article>
+                  <article>
+                    <span>盘后事实层</span>
+                    <strong data-source-postclose-facts>--</strong>
+                  </article>
+                  <article>
+                    <span>新闻来源</span>
+                    <strong data-source-news>--</strong>
+                  </article>
+                  <article class="wide">
+                    <span>新闻更新时间</span>
+                    <strong data-source-updated-at>--</strong>
+                  </article>
+                </div>
+              </div>
+            </section>
+
+            <section class="panel postclose-form-panel">
+              <div class="panel-head">
+                <h3>持仓录入</h3>
+                <span class="panel-tag">手动录入</span>
+              </div>
+              <div class="postclose-form-shell">
+                <div class="postclose-form-row">
+                  <label><span>代码 / 名称</span><input type="text" placeholder="如：000001 / 平安银行" /></label>
+                  <label><span>持仓方向</span><select><option>持有</option><option>观察仓</option></select></label>
+                </div>
+                <div class="postclose-form-row">
+                  <label><span>持仓成本</span><input type="text" placeholder="如：12.45" /></label>
+                  <label><span>当前仓位</span><input type="text" placeholder="如：25" /></label>
+                </div>
+                <label><span>持仓理由（可选）</span><textarea rows="3" placeholder="记录你最初持有这只标的的原因"></textarea></label>
+              </div>
+
+              <div class="panel-head postclose-subhead">
+                <h3>操作录入</h3>
+                <span class="panel-tag">后续接入</span>
+              </div>
+              <div class="postclose-form-shell">
+                <div class="postclose-form-row">
+                  <label><span>买入 / 卖出</span><select><option>买入</option><option>卖出</option></select></label>
+                  <label><span>成交时间</span><input type="text" placeholder="如：10:32" /></label>
+                </div>
+                <div class="postclose-form-row">
+                  <label><span>成交价</span><input type="text" placeholder="如：18.36" /></label>
+                  <label><span>仓位变化</span><input type="text" placeholder="如：加仓 10%" /></label>
+                </div>
+                <label><span>操作理由</span><textarea rows="3" placeholder="记录你为什么在这个位置操作"></textarea></label>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <h3>持仓复盘结果</h3>
+                <span class="panel-tag">等待生成</span>
+              </div>
+              <div class="postclose-empty-state">
+                <strong>这里会输出组合总评与个股逐条分析</strong>
+                <p>提交持仓后，这里会展示驱动判断、风险提示和次日建议。</p>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <h3>操作复盘结果</h3>
+                <span class="panel-tag">后续接入</span>
+              </div>
+              <div class="postclose-empty-state">
+                <strong>这里会输出整体操作总评与单笔复盘</strong>
+                <p>当前版本先把市场总复盘和持仓复盘链路打通，操作复盘下一步再接。</p>
+              </div>
+            </section>
+
+            <section class="panel">
+              <div class="panel-head">
+                <h3>盘后问答</h3>
+                <span class="panel-tag">底部入口</span>
+              </div>
+              <div class="postclose-qa-shell">
+                <textarea rows="4" placeholder="例如：今天我的持仓里谁最偏离主线？明天应该先看哪些验证条件？"></textarea>
+                <div class="button-row">
+                  <button class="secondary-button" type="button" disabled>清空</button>
+                  <button class="primary-button" type="button" disabled>发送问题（后续接入）</button>
+                </div>
+              </div>
+            </section>
+          </div>
+        </section>
+
+        <section class="view-section muted-section" id="history" data-section="history" data-mode-scope="both">
           <div class="section-head">
             <div>
               <p class="eyebrow">History</p>
@@ -476,7 +794,7 @@
             <div class="history-list" data-history-list>
               <article>
                 <strong>等待加载</strong>
-                <span>执行一次筛选后，会自动生成本地 xlsx 结果并出现在这里。</span>
+                <span>执行一次筛选或复盘后，这里会展示本地结果文件与记录。</span>
                 <button type="button" disabled>打开</button>
               </article>
             </div>
@@ -487,7 +805,7 @@
 
     <div class="drawer-backdrop" data-close-drawer></div>
     <aside class="detail-drawer" aria-label="个股详情">
-      <button class="drawer-close" type="button" data-close-drawer>×</button>
+      <button class="drawer-close" type="button" data-close-drawer">×</button>
       <div id="drawerContent"></div>
     </aside>
 
@@ -495,5 +813,6 @@
 
     <script src="./app.js"></script>
     <script src="./api-bridge.js"></script>
+    <script src="./postclose-bridge.js"></script>
   </body>
 </html>

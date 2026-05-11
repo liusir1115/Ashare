@@ -5,14 +5,14 @@ const modeContent = {
     weightTag: "预期判断",
     resultMode: "盘前预判",
     weights: [
-      ["高权重", "新闻催化、板块热度、题材扩散度"],
+      ["高权重", "新闻催化、板块热度、题材扩散速度"],
       ["中权重", "资金活跃度、龙头带动、市场情绪"],
       ["加分项", "个股热度与趋势延续性"],
     ],
   },
   post: {
     title: "盘后复盘",
-    summary: "优先复核资金流、市场情绪、风格切换与涨停结构，筛出次日仍需跟踪的方向。",
+    summary: "优先复核资金流、市场情绪、风格切换与涨停结构，沉淀出次日仍需跟踪的方向。",
     weightTag: "复盘判断",
     resultMode: "盘后复盘",
     weights: [
@@ -23,26 +23,58 @@ const modeContent = {
   },
 };
 
+window.ASHARE_API_BASE = window.location.protocol === "file:" ? "http://127.0.0.1:5000" : "";
+
+function qs(selector) {
+  return document.querySelector(selector);
+}
+
+function qsa(selector) {
+  return Array.from(document.querySelectorAll(selector));
+}
+
+function ensurePostcloseBridgeLoaded() {
+  if (document.querySelector("script[data-postclose-bridge]")) {
+    return;
+  }
+
+  const script = document.createElement("script");
+  script.src = "./postclose-bridge.js";
+  script.dataset.postcloseBridge = "true";
+  document.body.appendChild(script);
+}
+
 function renderMode(mode) {
   const content = modeContent[mode] || modeContent.pre;
-  document.querySelector("[data-mode-title]").textContent = content.title;
-  document.querySelector("[data-mode-summary]").textContent = content.summary;
-  document.querySelector("[data-weight-tag]").textContent = content.weightTag;
-  document.querySelector("[data-result-mode]").textContent = content.resultMode;
 
-  document.querySelector("[data-weight-list]").innerHTML = content.weights
+  qs("[data-mode-title]").textContent = content.title;
+  qs("[data-mode-summary]").textContent = content.summary;
+  qs("[data-weight-tag]").textContent = content.weightTag;
+  qs("[data-result-mode]").textContent = content.resultMode;
+
+  qs("[data-weight-list]").innerHTML = content.weights
     .map(([label, text]) => `<div><span>${label}</span><strong>${text}</strong></div>`)
     .join("");
+
+  qsa("[data-mode-panel]").forEach((node) => {
+    node.classList.toggle("is-hidden", node.dataset.modePanel !== mode);
+  });
+
+  qsa("[data-mode-scope]").forEach((node) => {
+    const scope = node.dataset.modeScope || "both";
+    const shouldShow = scope === "both" || scope === mode;
+    node.classList.toggle("is-hidden", !shouldShow);
+  });
 }
 
 function updateModeButtons(mode) {
-  document.querySelectorAll("[data-mode-button]").forEach((button) => {
+  qsa("[data-mode-button]").forEach((button) => {
     button.classList.toggle("active", button.dataset.modeButton === mode);
   });
 }
 
 function jumpTo(id) {
-  document.querySelector(`#${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
+  qs(`#${id}`)?.scrollIntoView({ behavior: "smooth", block: "start" });
 }
 
 document.addEventListener("click", (event) => {
@@ -59,6 +91,32 @@ document.addEventListener("click", (event) => {
     jumpTo(jumpButton.dataset.jump);
   }
 
+  const reportToggleButton = event.target.closest("[data-toggle-report]");
+  if (reportToggleButton) {
+    const targetId = reportToggleButton.dataset.target;
+    const target = targetId ? document.getElementById(targetId) : null;
+    if (target) {
+      const willShow = target.classList.contains("is-hidden");
+      target.classList.toggle("is-hidden", !willShow);
+      reportToggleButton.textContent = willShow ? "收起完整简报" : "查看完整简报";
+      if (willShow) {
+        target.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }
+  }
+
+  const modeAwareJumpButton = event.target.closest("[data-jump-target]");
+  if (modeAwareJumpButton) {
+    const activeMode = qs("[data-mode-button].active")?.dataset.modeButton || "pre";
+    const target =
+      activeMode === "post"
+        ? modeAwareJumpButton.dataset.jumpPost
+        : modeAwareJumpButton.dataset.jumpPre;
+    if (target) {
+      jumpTo(target);
+    }
+  }
+
   if (event.target.closest("[data-close-drawer]")) {
     document.body.classList.remove("drawer-open");
   }
@@ -72,3 +130,4 @@ document.addEventListener("keydown", (event) => {
 
 renderMode("pre");
 updateModeButtons("pre");
+ensurePostcloseBridgeLoaded();

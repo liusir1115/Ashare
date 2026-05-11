@@ -1,4 +1,5 @@
 (function () {
+  const API_BASE = window.ASHARE_API_BASE || "";
   const state = {
     mode: "pre",
     stocks: [],
@@ -17,6 +18,11 @@
   const tablePanel = document.querySelector(".table-panel");
   const historyList = document.querySelector("[data-history-list]");
   const strategyState = document.querySelector("[data-strategy-state]");
+  const strategyQuery = document.querySelector("[data-strategy-query]");
+  const strategyNotes = document.querySelector("[data-strategy-notes]");
+  const strategyMapping = document.querySelector("[data-strategy-mapping]");
+  const strategyConditions = document.querySelector("[data-strategy-conditions]");
+  const strategyLLMStatus = document.querySelector("[data-strategy-llm-status]");
   const sourceList = document.querySelector("[data-source-list]");
   const conditionSummary = document.querySelector("[data-condition-summary]");
   const briefTitle = document.querySelector("[data-brief-title]");
@@ -43,13 +49,45 @@
     ma_breakout: "均线突破",
     new_high_low: "N 日新高 / 新低",
     consecutive_up_down: "连续涨跌",
+    chip_concentration: "筹码集中度",
+    winner_rate: "获利盘比例",
+    price_vs_chip: "现价相对筹码成本",
   };
+
+  const STRATEGY_TAG_LIBRARY = [
+    { id: "momentum", aliases: ["动量", "momentum", "强趋势", "趋势强化"] },
+    { id: "reversal", aliases: ["反转", "反弹", "低吸", "reversal"] },
+    { id: "pullback", aliases: ["回调", "回踩", "pullback", "缩量回调"] },
+    { id: "volume_expand", aliases: ["放量", "量能放大", "volume expansion", "放量突破"] },
+    { id: "volume_shrink", aliases: ["缩量", "量能收缩", "volume shrink", "缩量整理"] },
+    { id: "breakout", aliases: ["突破", "平台突破", "breakout"] },
+    { id: "new_high", aliases: ["新高", "阶段新高", "new high"] },
+    { id: "oversold", aliases: ["超跌", "跌深反弹", "oversold"] },
+    { id: "strong_tape", aliases: ["连板", "强势", "主升"] },
+    { id: "chip_focus", aliases: ["筹码", "筹码集中", "筹码结构", "chip"] },
+    { id: "winner_rate", aliases: ["获利盘", "套牢盘轻", "winner rate"] },
+    { id: "chip_cost", aliases: ["成本附近", "回到成本", "筹码成本", "cost line"] },
+    { id: "trend_acceleration", aliases: ["趋势加速", "加速", "加速段", "accelerate"] },
+    { id: "ma_bull", aliases: ["均线多头", "多头排列", "沿均线走强", "ma bull"] },
+    { id: "platform_breakout", aliases: ["平台突破", "箱体突破", "突破平台", "platform breakout"] },
+    { id: "weak_to_strong", aliases: ["弱转强", "转强", "分歧转强", "weak to strong"] },
+    { id: "leader_return", aliases: ["龙头回流", "核心回流", "主线回流", "leader return"] },
+    { id: "small_cap_elasticity", aliases: ["小票弹性", "小市值弹性", "弹性票", "small cap"] },
+  ];
 
   function showToast(message) {
     if (!toast) return;
     toast.textContent = message;
     toast.classList.add("show");
     window.setTimeout(() => toast.classList.remove("show"), 2200);
+  }
+
+  function splitNewsSummary(summary) {
+    return String(summary || "")
+      .split(/[；;。]\s*/)
+      .map((part) => part.trim())
+      .filter(Boolean)
+      .slice(0, 4);
   }
 
   function getNumberValue(input) {
@@ -80,6 +118,7 @@
     const direction = card.querySelector("[data-consecutive-field='direction']")?.value || "up";
     const minDays = getNumberValue(card.querySelector("[data-consecutive-field='min']"));
     const maxDays = getNumberValue(card.querySelector("[data-consecutive-field='max']"));
+    if (minDays === null && maxDays === null) return null;
     if (minDays === null || maxDays === null) return null;
     return { direction, min_days: minDays, max_days: maxDays };
   }
@@ -168,9 +207,223 @@
   function updateConditionSummary(payload) {
     if (!conditionSummary) return;
     const summaries = summarizePayload(payload);
-    conditionSummary.innerHTML = `<h4>当前条件摘要</h4>${summaries
-      .map((item) => `<span>${item}</span>`)
-      .join("")}`;
+    conditionSummary.innerHTML = `<h4>当前条件摘要</h4>${
+      summaries.length
+        ? summaries.map((item) => `<span>${item}</span>`).join("")
+        : '<span>当前未启用硬性筛选条件，只有你主动填写的项才会生效。</span>'
+    }`;
+  }
+
+  function detectStrategyTags(query) {
+    const text = String(query || "").trim().toLowerCase();
+    if (!text) return [];
+    return STRATEGY_TAG_LIBRARY
+      .filter((tag) => (tag.aliases || []).some((alias) => text.includes(String(alias).toLowerCase())))
+      .map((tag) => tag.id);
+  }
+
+  function setStrategyNotes(notes, unsupportedIntents) {
+    if (!strategyNotes) return;
+    const noteItems = Array.isArray(notes) ? notes.filter(Boolean) : [];
+    const unsupported = Array.isArray(unsupportedIntents) ? unsupportedIntents.filter(Boolean) : [];
+    const combined = [
+      ...noteItems,
+      ...unsupported.map((item) => `暂未接入：${item}`),
+    ];
+
+    strategyNotes.innerHTML = `<h4>解析说明</h4>${
+      combined.length
+        ? combined.map((item) => `<span>${item}</span>`).join("")
+        : '<span>这里会解释系统如何把自然语言翻译成筛选条件。</span>'
+    }`;
+  }
+
+  function setStrategyMapping(mappingSummary) {
+    if (!strategyMapping) return;
+    const rows = Array.isArray(mappingSummary) ? mappingSummary.filter(Boolean) : [];
+    strategyMapping.innerHTML = `<h4>映射词与指标</h4>${
+      rows.length
+        ? rows.map((item) => `<span>${item}</span>`).join("")
+        : '<span>这里会展示自然语言策略先被识别成哪些策略词，再映射到哪些量化指标。</span>'
+    }`;
+  }
+
+  function formatStrategyCondition(key, value) {
+    const label = FILTER_LABELS[key] || key;
+    if (value === null || value === undefined || value === "") {
+      return null;
+    }
+
+    if (Array.isArray(value)) {
+      const unit = key.includes("market_cap") || key === "amount" ? "亿" : "%";
+      if (key.includes("market_cap") || key === "amount") {
+        return `${label}：${(value[0] / 1e8).toFixed(1)}-${(value[1] / 1e8).toFixed(1)} ${unit}`;
+      }
+      if (key === "volume_ratio") {
+        return `${label}：${value[0]} - ${value[1]}`;
+      }
+      return `${label}：${value[0]} - ${value[1]}${["price_range", "volume_ratio", "chip_concentration", "winner_rate", "price_vs_chip", "change_pct", "turnover_rate", "amplitude"].includes(key) ? (key === "price_range" ? " 元" : " %") : ""}`;
+    }
+
+    if (typeof value === "object" && "bounds" in value) {
+      return `${label}：近 ${value.days} 日，${value.bounds[0]} - ${value.bounds[1]}%`;
+    }
+
+    if (typeof value === "object" && "direction" in value) {
+      const directionText = value.direction === "down" ? "连跌" : "连涨";
+      return `${label}：${directionText} ${value.min_days}-${value.max_days} 天`;
+    }
+
+    const mapping = {
+      above_ma5_ma10: "站上 5/10 日均线",
+      near_ma20: "贴近 20 日均线",
+      breakout_ma20: "突破 20 日均线",
+      breakout_ma60: "突破 60 日均线",
+      high_20d: "20 日新高",
+      high_60d: "60 日新高",
+      low_20d: "20 日新低",
+      volume_expand_2d: "连续放量 2 日及以上",
+      volume_shrink_2d: "连续缩量 2 日及以上",
+    };
+    return `${label}：${mapping[value] || value}`;
+  }
+
+  function setStrategyConditions(payload, quantifiedConditions) {
+    if (!strategyConditions) return;
+    const structuredRows = Array.isArray(quantifiedConditions)
+      ? quantifiedConditions.filter(Boolean)
+      : [];
+    const filters = payload?.filters || {};
+    const fallbackRows = Object.entries(filters)
+      .map(([key, value]) => formatStrategyCondition(key, value))
+      .filter(Boolean);
+    const rows = structuredRows.length ? structuredRows : fallbackRows;
+
+    strategyConditions.innerHTML = `<h4>量化后的条件</h4>${
+      rows.length
+        ? rows.map((item) => `<span>${item}</span>`).join("")
+        : '<span>这里会展示策略最终量化成的具体筛选条件。</span>'
+    }`;
+  }
+
+  function applyParsedPayloadToForm(payload) {
+    if (!payload) return;
+
+    const setValue = (selector, value) => {
+      const node = document.querySelector(selector);
+      if (node && value !== undefined && value !== null) {
+        node.value = value;
+      }
+    };
+
+    const setChecked = (selector, value) => {
+      const node = document.querySelector(selector);
+      if (node) {
+        node.checked = Boolean(value);
+      }
+    };
+
+    setValue("[data-field='screen_depth']", payload.screen_depth);
+    setValue("[data-field='market_scope']", payload.market_scope);
+    setChecked("[data-field='exclude_new_listing_90d']", payload.exclude_new_listing_90d);
+
+    const filters = payload.filters || {};
+    document.querySelectorAll("[data-filter]").forEach((card) => {
+      const filterId = card.dataset.filter;
+      const value = filters[filterId];
+      if (value === undefined || value === null) {
+        return;
+      }
+
+      const kind = card.dataset.filterKind;
+      if (kind === "range" && Array.isArray(value)) {
+        const scale = Number(card.dataset.scale || "1");
+        const minNode = card.querySelector("[data-bound='min']");
+        const maxNode = card.querySelector("[data-bound='max']");
+        if (minNode) minNode.value = value[0] / scale;
+        if (maxNode) maxNode.value = value[1] / scale;
+        return;
+      }
+
+      if (kind === "day-range" && value && typeof value === "object") {
+        const daysNode = card.querySelector("[data-day-field='days']");
+        const minNode = card.querySelector("[data-day-field='min']");
+        const maxNode = card.querySelector("[data-day-field='max']");
+        if (daysNode) daysNode.value = value.days ?? "";
+        if (minNode) minNode.value = value.bounds?.[0] ?? "";
+        if (maxNode) maxNode.value = value.bounds?.[1] ?? "";
+        return;
+      }
+
+      if (kind === "consecutive" && value && typeof value === "object") {
+        const directionNode = card.querySelector("[data-consecutive-field='direction']");
+        const minNode = card.querySelector("[data-consecutive-field='min']");
+        const maxNode = card.querySelector("[data-consecutive-field='max']");
+        if (directionNode) directionNode.value = value.direction ?? "up";
+        if (minNode) minNode.value = value.min_days ?? "";
+        if (maxNode) maxNode.value = value.max_days ?? "";
+        return;
+      }
+
+      if (kind === "select") {
+        const selectNode = card.querySelector("[data-select-value]");
+        if (selectNode) {
+          selectNode.value = value;
+        }
+      }
+    });
+
+    updateFullOnlyState();
+    updateConditionSummary(readFormPayload());
+  }
+
+  async function parseStrategyToFilters() {
+    const query = strategyQuery?.value?.trim();
+    if (!query) {
+      showToast("请先输入一句策略描述");
+      return;
+    }
+
+    const currentPayload = readFormPayload();
+    if (strategyLLMStatus) {
+      strategyLLMStatus.textContent = "正在解析策略...";
+    }
+
+    try {
+      const response = await fetch(`${API_BASE}/api/strategy/parse`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          query,
+          current_payload: currentPayload,
+          detected_strategy_tags: detectStrategyTags(query),
+        }),
+      });
+      const payload = await response.json();
+      if (!response.ok) {
+        throw new Error(payload.detail || payload.message || `strategy parse failed: ${response.status}`);
+      }
+
+      applyParsedPayloadToForm(payload.merged_payload);
+      setStrategyNotes(payload.parsed_strategy?.notes, payload.parsed_strategy?.unsupported_intents);
+      setStrategyMapping(payload.strategy_mapping_summary);
+      setStrategyConditions(payload.merged_payload, payload.quantified_conditions);
+
+      if (strategyLLMStatus) {
+        const llmStatus = payload.llm_status || {};
+        strategyLLMStatus.textContent = llmStatus.used
+          ? `当前使用 ${llmStatus.provider || "LLM"} / ${llmStatus.model || "--"} 解析策略`
+          : "当前使用规则版解析，已翻译为可执行筛选条件并回填到面板。";
+      }
+
+      showToast("策略已转换成筛选条件，并已回填到筛选面板");
+    } catch (error) {
+      console.error(error);
+      if (strategyLLMStatus) {
+        strategyLLMStatus.textContent = "策略解析失败，请调整描述后重试。";
+      }
+      showToast(error.message || "策略解析失败");
+    }
   }
 
   function renderRows() {
@@ -240,13 +493,13 @@
   function updateSummary(payload, responsePayload) {
     document.querySelector("[data-result-mode]").textContent = state.mode === "post" ? "盘后复盘" : "盘前预判";
     document.querySelector("[data-result-scope]").textContent = payload.market_scope;
-    document.querySelector("[data-result-filter-summary]").textContent = summarizePayload(payload).slice(0, 4).join(" / ") || "默认条件";
+    document.querySelector("[data-result-filter-summary]").textContent = summarizePayload(payload).slice(0, 4).join(" / ") || "未启用硬性筛选条件";
     document.querySelector("[data-result-first-round]").textContent = String(responsePayload.first_round_count || 0);
     document.querySelector("[data-result-final-round]").textContent = String(responsePayload.final_result_count || 0);
 
     const stageMeta = responsePayload.stage_meta || {};
     const sourceMeta = [
-      stageMeta.spot_cache_hit ? "AKShare 快照命中缓存" : "AKShare 快照实时拉取",
+      stageMeta.spot_cache_hit ? "Tushare 快照命中缓存" : "Tushare 快照实时拉取",
       payload.screen_depth === "full" ? `增强 ${Math.round(stageMeta.enhancement_ms || 0)}ms` : `快筛 ${Math.round(stageMeta.fast_filter_ms || 0)}ms`,
     ];
     document.querySelector("[data-result-source-meta]").textContent = sourceMeta.join(" / ");
@@ -262,7 +515,7 @@
     const rows = [
       {
         status: "ok",
-        title: "AKShare 行情",
+        title: "Tushare 行情",
         text: stageMeta.spot_cache_hit ? "正常 · 命中缓存" : "正常 · 本轮拉取",
       },
       {
@@ -276,9 +529,9 @@
         text: "暂未接入，结果页保持占位说明",
       },
       {
-        status: "warn",
-        title: "筹码集中度",
-        text: "暂未接入，不参与本轮筛选",
+        status: "ok",
+        title: "筹码结构",
+        text: "已接入日级代理字段：筹码集中度 / 获利盘比例 / 现价相对筹码成本",
       },
       {
         status: responsePayload.results?.length ? "off" : "warn",
@@ -321,13 +574,13 @@
     const steps =
       payload.screen_depth === "full"
         ? [
-            { progress: 12, title: "正在拉取实时行情", message: "等待 AKShare 返回市场快照..." },
+            { progress: 12, title: "正在拉取实时行情", message: "等待 Tushare 返回市场快照..." },
             { progress: 38, title: "正在执行首轮硬筛", message: "按价格、成交额、换手率与量比进行首轮过滤..." },
             { progress: 66, title: "正在补充历史增强指标", message: "拉取候选股票历史 K 线，计算趋势与强弱信息..." },
             { progress: 88, title: "正在整理候选榜单", message: "增强计算完成，正在生成排序结果..." },
           ]
         : [
-            { progress: 18, title: "正在拉取实时行情", message: "等待 AKShare 返回市场快照..." },
+            { progress: 18, title: "正在拉取实时行情", message: "等待 Tushare 返回市场快照..." },
             { progress: 54, title: "正在执行首轮硬筛", message: "按价格、成交额、换手率、振幅和量比进行快速筛选..." },
             { progress: 86, title: "正在整理候选榜单", message: "快速筛选完成，正在组织表格与详情数据..." },
           ];
@@ -388,7 +641,7 @@
     setStrategyState(payload);
 
     try {
-      const response = await fetch("/api/screen/run", {
+      const response = await fetch(`${API_BASE}/api/screen/run`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
@@ -449,7 +702,7 @@
 
   async function refreshHistory() {
     try {
-      const response = await fetch("/api/history");
+      const response = await fetch(`${API_BASE}/api/history`);
       if (!response.ok) {
         throw new Error(`history failed: ${response.status}`);
       }
@@ -465,14 +718,14 @@
     if (!briefList || !briefTitle || !briefUpdated) return;
 
     const items = Array.isArray(payload?.items) ? payload.items : [];
-    briefTitle.textContent = payload?.source_label ? `今日重点新闻 · ${payload.source_label}` : "今日重点新闻";
-    briefUpdated.textContent = payload?.updated_at ? `更新 ${String(payload.updated_at).slice(11, 16) || payload.updated_at}` : "更新中";
+    briefTitle.textContent = payload?.source_label ? `?????? ? ${payload.source_label}` : "??????";
+    briefUpdated.textContent = payload?.updated_at ? `?? ${String(payload.updated_at).slice(11, 16) || payload.updated_at}` : "???";
 
     if (!items.length) {
       briefList.innerHTML = `
         <article>
-          <strong>暂无新闻数据</strong>
-          <p>当前没有拿到可展示的新闻条目，可以稍后刷新页面重试。</p>
+          <strong>??????</strong>
+          <p>??????????????????????????</p>
         </article>
       `;
       return;
@@ -480,14 +733,17 @@
 
     briefList.innerHTML = items
       .map((item) => {
-        const footer = [item.source, item.published_at].filter(Boolean).join(" · ");
+        const footer = [item.source, item.published_at].filter(Boolean).join(" ? ");
         const link = item.url
-          ? `<a class="brief-link" href="${item.url}" target="_blank" rel="noreferrer">查看原文</a>`
+          ? `<a class="brief-link" href="${item.url}" target="_blank" rel="noreferrer">????</a>`
           : "";
+        const bullets = splitNewsSummary(item.summary)
+          .map((part) => `<span class="brief-bullet">${part}</span>`)
+          .join("");
         return `
           <article>
-            <strong>${item.title || "重点新闻"}</strong>
-            <p>${item.summary || ""}</p>
+            <strong>${item.title || "????"}</strong>
+            <div class="brief-bullets">${bullets || `<span class="brief-bullet">${item.summary || ""}</span>`}</div>
             <div class="brief-meta">
               <span>${footer}</span>
               ${link}
@@ -500,7 +756,7 @@
 
   async function refreshNewsBrief() {
     try {
-      const response = await fetch("/api/news/brief");
+      const response = await fetch(`${API_BASE}/api/news/brief`);
       if (!response.ok) {
         throw new Error(`news failed: ${response.status}`);
       }
@@ -509,12 +765,12 @@
     } catch (error) {
       console.error(error);
       renderNewsBrief({
-        source_label: "新闻接口异常",
+        source_label: "??????",
         updated_at: "",
         items: [
           {
-            title: "新闻简报加载失败",
-            summary: "AKShare 新闻源本轮没有成功返回内容，稍后刷新页面可再次尝试。",
+            title: "????????",
+            summary: "AKShare ??????????????????????????",
             source: "fallback",
             published_at: "",
           },
@@ -596,6 +852,23 @@
       const resetButton = event.target.closest("[data-reset-form]");
       if (resetButton) {
         resetForm();
+      }
+
+      const strategyParseButton = event.target.closest("[data-strategy-parse]");
+      if (strategyParseButton) {
+        parseStrategyToFilters();
+      }
+
+      const strategyClearButton = event.target.closest("[data-strategy-clear]");
+      if (strategyClearButton) {
+        if (strategyQuery) strategyQuery.value = "";
+        setStrategyNotes([], []);
+        setStrategyMapping([]);
+        setStrategyConditions({}, []);
+        if (strategyLLMStatus) {
+          strategyLLMStatus.textContent = "输入一句策略描述，系统会尝试翻译成量化筛选条件。";
+        }
+        showToast("已清空策略描述");
       }
 
       const exportButton = event.target.closest("[data-export]");

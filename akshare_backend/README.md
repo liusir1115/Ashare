@@ -1,29 +1,28 @@
-# AKShare 后端脚本
+# Ashare Backend
 
-这个目录用于放置本项目第一版真实数据接入脚本。
+这个目录现在承载两条明确分开的能力：
 
-## 文件说明
+- 盘前主筛选：以 `Tushare` 为主数据源
+- 新闻摘要与部分盘后辅助：保留 `AKShare` 资讯/快照能力
 
-- `service.py`：AKShare 拉取、字段标准化、筛选和结果组装
-- `app.py`：最小 Flask API，同时托管现有前端静态页面
-- `probe_columns.py`：命令行探测脚本，用来检查 AKShare 列名和前端筛选项支持情况
-- `requirements.txt`：环境依赖
+## 当前主文件
 
-## 已创建环境
+- `app.py`：Flask 入口，统一挂载前端页面与后端接口
+- `service.py`：薄服务层，只做对外导出
+- `premarket_tushare_screen_service.py`：盘前主筛选链路
+- `tushare_provider.py`：Tushare client 和数据拉取封装
+- `tushare_runtime_local.py`：本地统一初始化文件
+- `premarket_news_service.py`：新闻摘要能力
+- `postclose_market_service.py`：盘后市场复盘的数据骨架
 
-推荐使用已创建的 conda 环境：
+## 当前运行前提
 
-```bash
-conda activate ashare-ak
-```
+1. 本地 Python 依赖已安装
+2. 项目默认从 `akshare_backend/tushare_runtime_local.py` 初始化 Tushare client
+3. 如果本地初始化文件不存在，才回退到 `TUSHARE_TOKEN` 环境变量
+4. 未配置有效 token 时，服务会明确报错，不会伪造演示数据
 
-## 先跑能力探测
-
-```bash
-python akshare_backend/probe_columns.py
-```
-
-## 启动最小前后端联调
+## 启动方式
 
 ```bash
 python akshare_backend/app.py
@@ -35,19 +34,9 @@ python akshare_backend/app.py
 http://127.0.0.1:5000
 ```
 
-## 当前实现边界
+## 当前边界
 
-当前版本优先验证：
-
-1. AKShare 是否能提供前端主链路所需的核心字段
-2. 哪些筛选项可以直接用 `stock_zh_a_spot_em()` 支持
-3. 哪些筛选项需要额外历史 K 线或题材数据
-4. 前端能否通过按钮直接请求后端并刷新结果表格
-
-当前没有做：
-
-1. 数据库存储
-2. 历史记录持久化
-3. 全量历史 K 线批处理
-4. 完整概念 / 行业映射
-5. 盘前 / 盘后两套完整评分模型
+- 已切掉旧的 AKShare 盘前主筛选定位
+- 保留 AKShare 新闻/辅助能力，因为它们仍然被真实调用
+- 临时实验脚本已移入 `archive/backend-helpers/`
+- 当前这台机器的 Tushare 初始化已落到本地文件，后续统一复用该入口

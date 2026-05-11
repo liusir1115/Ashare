@@ -6,6 +6,8 @@ from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
 try:
+    from .premarket_strategy_llm_service import parse_strategy_to_payload
+    from .postclose_routes import postclose_bp
     from .service import (
         PayloadValidationError,
         build_capability_report,
@@ -14,7 +16,10 @@ try:
         probe_snapshot,
         run_screen,
     )
+    from .tushare_routes import tushare_bp
 except ImportError:
+    from premarket_strategy_llm_service import parse_strategy_to_payload
+    from postclose_routes import postclose_bp
     from service import (
         PayloadValidationError,
         build_capability_report,
@@ -23,6 +28,7 @@ except ImportError:
         probe_snapshot,
         run_screen,
     )
+    from tushare_routes import tushare_bp
 
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
@@ -30,13 +36,15 @@ FRONTEND_DIR = PROJECT_ROOT / "frontend"
 
 app = Flask(__name__, static_folder=str(FRONTEND_DIR), static_url_path="")
 CORS(app)
+app.register_blueprint(postclose_bp)
+app.register_blueprint(tushare_bp)
 
 
 @app.get("/api/health")
 def health() -> tuple[dict, int]:
     return {
         "status": "ok",
-        "message": "AKShare backend is ready.",
+        "message": "Ashare backend is ready.",
     }, 200
 
 
@@ -89,7 +97,51 @@ def screen_run() -> tuple[dict, int]:
             jsonify(
                 {
                     "status": "error",
-                    "message": "AKShare 拉取失败或字段处理异常。",
+                    "message": "Tushare 数据拉取失败或字段处理异常。",
+                    "detail": str(exc),
+                }
+            ),
+            503,
+        )
+
+
+@app.post("/api/strategy/parse")
+def strategy_parse() -> tuple[dict, int]:
+    payload = request.get_json(silent=True) or {}
+    query = str(payload.get("query") or "").strip()
+    current_payload = payload.get("current_payload") or {}
+    detected_strategy_tags = payload.get("detected_strategy_tags") or []
+
+    if not query:
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": "策略描述不能为空。",
+                }
+            ),
+            400,
+        )
+
+    try:
+        return jsonify(parse_strategy_to_payload(query, current_payload=current_payload, detected_strategy_tags=detected_strategy_tags)), 200
+    except PayloadValidationError as exc:
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": "策略解析后的筛选条件校验失败。",
+                    "detail": str(exc),
+                }
+            ),
+            400,
+        )
+    except Exception as exc:  # pragma: no cover
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": "策略解析失败。",
                     "detail": str(exc),
                 }
             ),
