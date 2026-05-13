@@ -23,6 +23,18 @@ const modeContent = {
   },
 };
 
+modeContent.backtest = {
+  title: "策略回测",
+  summary: "用真实历史日线验证量化条件在过去窗口里的收益、回撤和稳定性。",
+  weightTag: "历史验证",
+  resultMode: "策略回测",
+  weights: [
+    ["高权重", "累计收益、最大回撤、年化收益"],
+    ["中权重", "胜率、盈亏比、交易次数"],
+    ["加分项", "不同参数下的稳定性和可交易性"],
+  ],
+};
+
 window.ASHARE_API_BASE = window.location.protocol === "file:" ? "http://127.0.0.1:5000" : "";
 
 function qs(selector) {
@@ -41,6 +53,17 @@ function ensurePostcloseBridgeLoaded() {
   const script = document.createElement("script");
   script.src = "./postclose-bridge.js";
   script.dataset.postcloseBridge = "true";
+  document.body.appendChild(script);
+}
+
+function ensureBacktestBridgeLoaded() {
+  if (document.querySelector("script[data-backtest-bridge]")) {
+    return;
+  }
+
+  const script = document.createElement("script");
+  script.src = "./backtest-bridge.js";
+  script.dataset.backtestBridge = "true";
   document.body.appendChild(script);
 }
 
@@ -71,6 +94,20 @@ function updateModeButtons(mode) {
   qsa("[data-mode-button]").forEach((button) => {
     button.classList.toggle("active", button.dataset.modeButton === mode);
   });
+}
+
+function ensureBacktestModeButton() {
+  const segmented = document.querySelector(".segmented");
+  if (!segmented || document.querySelector("[data-mode-button='backtest']")) {
+    return;
+  }
+
+  const button = document.createElement("button");
+  button.className = "segment";
+  button.type = "button";
+  button.dataset.modeButton = "backtest";
+  button.textContent = "回测";
+  segmented.appendChild(button);
 }
 
 function jumpTo(id) {
@@ -111,7 +148,9 @@ document.addEventListener("click", (event) => {
     const target =
       activeMode === "post"
         ? modeAwareJumpButton.dataset.jumpPost
-        : modeAwareJumpButton.dataset.jumpPre;
+        : activeMode === "backtest"
+          ? modeAwareJumpButton.dataset.jumpBacktest
+          : modeAwareJumpButton.dataset.jumpPre;
     if (target) {
       jumpTo(target);
     }
@@ -131,3 +170,4 @@ document.addEventListener("keydown", (event) => {
 renderMode("pre");
 updateModeButtons("pre");
 ensurePostcloseBridgeLoaded();
+ensureBacktestBridgeLoaded();

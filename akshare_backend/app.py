@@ -6,6 +6,8 @@ from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
 
 try:
+    from .backtest_compare_service import compare_backtest_strategies
+    from .backtest_service import list_saved_backtests, run_backtest
     from .premarket_strategy_llm_service import parse_strategy_to_payload
     from .postclose_routes import postclose_bp
     from .service import (
@@ -18,6 +20,8 @@ try:
     )
     from .tushare_routes import tushare_bp
 except ImportError:
+    from backtest_compare_service import compare_backtest_strategies
+    from backtest_service import list_saved_backtests, run_backtest
     from premarket_strategy_llm_service import parse_strategy_to_payload
     from postclose_routes import postclose_bp
     from service import (
@@ -72,6 +76,14 @@ def news_brief() -> tuple[dict, int]:
     return get_market_news_brief(force_refresh=force_refresh), 200
 
 
+@app.get("/api/backtest/history")
+def backtest_history() -> tuple[dict, int]:
+    return {
+        "status": "ok",
+        "items": list_saved_backtests(),
+    }, 200
+
+
 @app.route("/api/screen/run", methods=["GET", "POST"])
 def screen_run() -> tuple[dict, int]:
     payload = request.get_json(silent=True) or {}
@@ -98,6 +110,94 @@ def screen_run() -> tuple[dict, int]:
                 {
                     "status": "error",
                     "message": "Tushare 数据拉取失败或字段处理异常。",
+                    "detail": str(exc),
+                }
+            ),
+            503,
+        )
+
+
+@app.post("/api/backtest/run")
+def backtest_run() -> tuple[dict, int]:
+    payload = request.get_json(silent=True) or {}
+    try:
+        return jsonify(run_backtest(payload)), 200
+    except PayloadValidationError as exc:
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": "回测参数校验失败。",
+                    "detail": str(exc),
+                }
+            ),
+            400,
+        )
+    except Exception as exc:  # pragma: no cover
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": "回测执行失败。",
+                    "detail": str(exc),
+                }
+            ),
+            503,
+        )
+
+
+@app.post("/api/backtest/compare")
+def backtest_compare() -> tuple[dict, int]:
+    payload = request.get_json(silent=True) or {}
+    query = str(payload.get("query") or "").strip()
+    current_payload = payload.get("current_payload") or {}
+    history_years = int(payload.get("history_years", 3))
+    holding_days = int(payload.get("holding_days", 3))
+    top_n = int(payload.get("top_n", 10))
+    execution_mode = str(payload.get("execution_mode", "fast")).strip().lower() or "fast"
+
+    if not query:
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": "策略描述不能为空。",
+                }
+            ),
+            400,
+        )
+
+    try:
+        return (
+            jsonify(
+                compare_backtest_strategies(
+                    query=query,
+                    current_payload=current_payload,
+                    history_years=history_years,
+                    holding_days=holding_days,
+                    top_n=top_n,
+                    execution_mode=execution_mode,
+                )
+            ),
+            200,
+        )
+    except PayloadValidationError as exc:
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": "策略对比参数校验失败。",
+                    "detail": str(exc),
+                }
+            ),
+            400,
+        )
+    except Exception as exc:  # pragma: no cover
+        return (
+            jsonify(
+                {
+                    "status": "error",
+                    "message": "策略对比执行失败。",
                     "detail": str(exc),
                 }
             ),

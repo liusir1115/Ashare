@@ -10,10 +10,12 @@ import pandas as pd
 
 try:
     from .postclose_concept_service import build_holdings_concept_snapshot
+    from .postclose_context_store import load_holdings_review_context, save_holdings_review_context
     from .postclose_driver_service import build_stock_driver_analysis
     from .postclose_fact_builder import build_postclose_fact_summary
     from .postclose_holdings_llm_service import generate_holdings_review_with_llm
-    from .postclose_market_service import build_postclose_market_review
+    from .postclose_market_adapter import build_market_review_with_session
+    from .postclose_session_service import build_holdings_next_actions, normalize_review_session
     from .postclose_tushare_provider import fetch_postclose_facts
     from .premarket_tushare_screen_service import fetch_tushare_snapshot
     from .tushare_provider import (
@@ -23,10 +25,12 @@ try:
     )
 except ImportError:
     from postclose_concept_service import build_holdings_concept_snapshot
+    from postclose_context_store import load_holdings_review_context, save_holdings_review_context
     from postclose_driver_service import build_stock_driver_analysis
     from postclose_fact_builder import build_postclose_fact_summary
     from postclose_holdings_llm_service import generate_holdings_review_with_llm
-    from postclose_market_service import build_postclose_market_review
+    from postclose_market_adapter import build_market_review_with_session
+    from postclose_session_service import build_holdings_next_actions, normalize_review_session
     from postclose_tushare_provider import fetch_postclose_facts
     from premarket_tushare_screen_service import fetch_tushare_snapshot
     from tushare_provider import (
@@ -583,8 +587,21 @@ def _build_fallback_holdings_review(
     }
 
 
-def build_postclose_holdings_review(payload: dict[str, Any], force_refresh: bool = False) -> dict[str, Any]:
+def build_postclose_holdings_review(
+    payload: dict[str, Any],
+    force_refresh: bool = False,
+    session: str | None = None,
+) -> dict[str, Any]:
+    review_session = normalize_review_session(session)
     normalized_holdings = _validate_holdings_payload(payload)
+    if not force_refresh:
+        cached = load_holdings_review_context(review_session)
+        requested_symbols = [str(item["symbol"]).strip() for item in normalized_holdings]
+        cached_facts = cached.get("holdings_facts") if isinstance(cached, dict) else None
+        cached_symbols = [str(item.get("symbol") or "").strip() for item in (cached_facts or [])]
+        if cached and requested_symbols == cached_symbols:
+            return cached
+
     _save_holdings_draft(
         [
             {
@@ -599,7 +616,7 @@ def build_postclose_holdings_review(payload: dict[str, Any], force_refresh: bool
         ]
     )
 
-    market_review = build_postclose_market_review(force_refresh=force_refresh)
+    market_review = build_market_review_with_session(force_refresh=force_refresh, session=review_session)
     snapshot_df, trade_date, _ = fetch_tushare_snapshot(force_refresh=force_refresh)
     postclose_facts = fetch_postclose_facts()
     fact_summary = build_postclose_fact_summary(postclose_facts)
@@ -649,8 +666,15 @@ def build_postclose_holdings_review(payload: dict[str, Any], force_refresh: bool
     except Exception as exc:  # pragma: no cover
         errors.append(f"holdings_review_llm: {exc}")
 
+    next_day_actions = build_holdings_next_actions(
+        review_payload=review_payload,
+        holdings_facts=holdings_facts,
+        session_meta=market_review.get("session_meta") or {},
+    )
+
     response = {
         "status": "ok",
+        "session": review_session,
         "trade_date": trade_date,
         "holdings_input_count": len(normalized_holdings),
         "market_context": {
@@ -660,7 +684,9 @@ def build_postclose_holdings_review(payload: dict[str, Any], force_refresh: bool
         },
         "holdings_facts": holdings_facts,
         "review": review_payload,
+        "next_day_actions": next_day_actions,
         "llm_status": llm_status,
         "errors": errors,
     }
+    save_holdings_review_context(response, review_session)
     return _sanitize_payload(response)

@@ -1,76 +1,112 @@
-# 公网部署方案（简版）
+# Public Deployment Plan
 
-## 1. 目标
+## Goal
 
-当前先做本地 demo，后续再迁移为统一部署的 Web 系统。
+Deploy the current local demo as a small shared web service for roughly 10 to 20 users.
 
-最终目标是：
+The target shape is:
+- one shared backend service
+- one shared web page
+- all market data and LLM calls happen on the server
+- users only open the website and submit forms
 
-- 用户只需要打开网页
-- 数据抓取统一在服务端完成
-- 大模型调用统一在服务端完成
-- 结果统一保存与导出
-- 用户不需要自己安装 Python、AKShare 或配置代理
+## Why This Is Feasible
 
-## 2. 为什么不走“每人本地安装”
+This project is already close to a deployable single-service app:
+- frontend is static files
+- backend is a Flask app
+- Tushare and DeepSeek are already server-side calls
+- user drafts and review caches already persist under `result/userdata`
 
-如果每个人都本地运行，会有这些问题：
+For a small friend-group scale, one lightweight server is enough.
 
-- Python 环境不一致
-- AKShare 与依赖安装不一致
-- 网络、代理、东方财富接口可达性不一致
-- 非技术用户很难排查问题
-- 后续更新和维护成本太高
+## Recommended First Deployment Shape
 
-所以长期一定要走统一部署。
+### Version 1
 
-## 3. 当前路线
+- 1 cloud server
+- Ubuntu 22.04
+- Python virtual environment
+- Flask app running behind a process manager
+- Nginx reverse proxy
+- one domain or raw IP access
 
-推荐按四步走：
+### Suggested server size
 
-1. 本地 demo：先跑通完整业务闭环
-2. 本地服务化：整理前后端接口、配置、日志和错误处理
-3. 单机 Web 部署：让小范围朋友通过同一个网址使用
-4. 正式公网部署：再补账号、权限、安全、监控和 HTTPS
+- 2 vCPU
+- 4 GB RAM
+- 40 GB disk
 
-## 4. 服务端负责什么
+This is enough for low-concurrency shared use.
 
-后续公网版本里，服务端统一负责：
+## Required Configuration Changes
 
-- 行情与新闻抓取
-- 数据清洗与结构化
-- 市场总复盘生成
-- 持仓复盘生成
-- 操作复盘生成
-- 大模型调用
-- 结果保存与导出
-- 降级提示与错误处理
+Before public deployment, the app should run from environment variables instead of local private runtime files.
 
-## 5. 用户端负责什么
+Already prepared:
+- `.env.example`
+- `ASHARE_HOST`
+- `ASHARE_PORT`
+- `TUSHARE_TOKEN`
+- `TUSHARE_HTTP_URL`
+- `DEEPSEEK_API_KEY`
+- `DEEPSEEK_BASE_URL`
 
-用户端尽量轻量，只负责：
+## Deployment Boundary
 
-- 打开页面
-- 录入持仓
-- 录入操作
-- 查看复盘结果
-- 发起问答
-- 导出结果
+Current first public version should include:
+- premarket screening
+- post-close market review
+- holdings review
+- operations review
+- post-close Q&A
 
-## 6. 对当前本地 demo 的要求
+Current first public version should not include:
+- broker connection
+- auto position sync
+- auto trade sync
+- order placement
+- public registration system
 
-虽然现在先做本地 demo，但代码结构要按以后可部署来约束：
+## Data and Secret Ownership
 
-- 前后端分离
-- 数据抓取逻辑不要写死在页面里
-- 大模型逻辑不要直接写在 UI 层
-- 输出先生成结构化 JSON，再渲染页面和 Markdown
-- 外部数据失败时要能明确降级
+In public deployment mode:
+- only the server stores tokens
+- users do not need local Python
+- users do not touch Tushare keys
+- users do not touch DeepSeek keys
 
-## 7. 当前结论
+## Persistence Plan
 
-当前最合适的路线是：
+For the first public version, keep persistence simple:
+- retain `result/`
+- retain `result/userdata/`
+- optionally add SQLite later if we need user isolation or multi-user history
 
-1. 先把盘后模式做成本地可跑 demo
-2. 本地 demo 结构按未来统一部署来设计
-3. 验证通过后，再迁移到统一 Web 部署
+## Risks To Watch
+
+### 1. Secret exposure
+
+The current repo must never commit real keys.
+
+### 2. Shared drafts
+
+Right now draft files are global, not per-user.
+
+That is acceptable for local demo work, but before wider public sharing we should add either:
+- a simple login/password gate, or
+- a lightweight user id/session isolation layer
+
+### 3. Data refresh latency
+
+For a small user group, current on-demand pull is acceptable, but later we may want:
+- timed cache refresh
+- background update jobs
+
+## Recommended Next Step
+
+1. Finish environment-variable deployment shape
+2. Add a minimal production startup command
+3. Deploy to one server for internal use
+4. Test with 2 to 3 friends first
+5. Then widen to the full small group

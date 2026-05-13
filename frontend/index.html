@@ -44,6 +44,7 @@
             <div class="segmented" role="group" aria-label="模式切换">
               <button class="segment active" type="button" data-mode-button="pre">盘前</button>
               <button class="segment" type="button" data-mode-button="post">盘后</button>
+              <button class="segment" type="button" data-mode-button="backtest">回测</button>
             </div>
             <button class="icon-button" type="button" data-export="excel" title="导出 Excel">XLS</button>
             <button class="icon-button" type="button" data-export="markdown" title="导出 Markdown">MD</button>
@@ -56,7 +57,7 @@
               <p class="eyebrow">Dashboard</p>
               <h2>今日工作台</h2>
             </div>
-            <button class="primary-button" type="button" data-jump-target data-jump-pre="screener" data-jump-post="postclose-review">进入主流程</button>
+            <button class="primary-button" type="button" data-jump-target data-jump-pre="screener" data-jump-post="postclose-review" data-jump-backtest="backtest-workbench">进入主流程</button>
           </div>
 
           <div class="metric-grid" data-mode-panel="pre">
@@ -552,6 +553,7 @@
             </div>
             <div class="button-row">
               <button class="secondary-button" type="button" data-jump="dashboard">返回工作台</button>
+              <button class="secondary-button" type="button" data-postclose-midday>午间快照</button>
               <button class="primary-button" type="button" data-postclose-generate>生成盘后复盘</button>
             </div>
           </div>
@@ -610,6 +612,36 @@
                     <strong>等待次日计划</strong>
                     <p>这里会给出可执行的观察顺序和验证条件。</p>
                   </article>
+                </div>
+
+                <div class="postclose-nextday-panel">
+                  <div class="postclose-nextday-head">
+                    <div>
+                      <span data-nextday-label>次日预期</span>
+                      <strong data-nextday-headline>等待生成次日预期</strong>
+                    </div>
+                    <span class="panel-tag" data-nextday-session-tag>结构化输出</span>
+                  </div>
+                  <div class="postclose-nextday-grid">
+                    <article>
+                      <span>观察重点</span>
+                      <ul data-nextday-watchpoints>
+                        <li>等待生成</li>
+                      </ul>
+                    </article>
+                    <article>
+                      <span>风险触发</span>
+                      <ul data-nextday-risks>
+                        <li>等待生成</li>
+                      </ul>
+                    </article>
+                    <article>
+                      <span>执行顺序</span>
+                      <ul data-nextday-order>
+                        <li>等待生成</li>
+                      </ul>
+                    </article>
+                  </div>
                 </div>
 
                 <div class="postclose-evidence-list">
@@ -729,18 +761,21 @@
 
               <div class="panel-head postclose-subhead">
                 <h3>操作录入</h3>
-                <span class="panel-tag">后续接入</span>
+                <span class="panel-tag">手动录入</span>
               </div>
-              <div class="postclose-form-shell">
-                <div class="postclose-form-row">
-                  <label><span>买入 / 卖出</span><select><option>买入</option><option>卖出</option></select></label>
-                  <label><span>成交时间</span><input type="text" placeholder="如：10:32" /></label>
+              <div class="postclose-form-shell" data-operations-editor-root>
+                <div class="postclose-holdings-toolbar">
+                  <div>
+                    <strong>操作批量录入</strong>
+                    <span>每笔操作都要求完整标签，方便后面判断这笔动作是否顺势、是否符合原计划。</span>
+                  </div>
+                  <div class="button-row">
+                    <button class="secondary-button" type="button" data-postclose-operation-add>新增一笔</button>
+                    <button class="secondary-button" type="button" data-postclose-operation-clear>清空全部</button>
+                    <button class="primary-button" type="button" data-postclose-operation-submit>生成操作复盘</button>
+                  </div>
                 </div>
-                <div class="postclose-form-row">
-                  <label><span>成交价</span><input type="text" placeholder="如：18.36" /></label>
-                  <label><span>仓位变化</span><input type="text" placeholder="如：加仓 10%" /></label>
-                </div>
-                <label><span>操作理由</span><textarea rows="3" placeholder="记录你为什么在这个位置操作"></textarea></label>
+                <div class="postclose-holdings-list" data-operations-list></div>
               </div>
             </section>
 
@@ -758,11 +793,11 @@
             <section class="panel">
               <div class="panel-head">
                 <h3>操作复盘结果</h3>
-                <span class="panel-tag">后续接入</span>
+                <span class="panel-tag">等待生成</span>
               </div>
               <div class="postclose-empty-state">
                 <strong>这里会输出整体操作总评与单笔复盘</strong>
-                <p>当前版本先把市场总复盘和持仓复盘链路打通，操作复盘下一步再接。</p>
+                <p>提交操作后，这里会展示每笔动作是否顺势、是否符合市场环境，以及次日需要复核的重点。</p>
               </div>
             </section>
 
@@ -772,10 +807,34 @@
                 <span class="panel-tag">底部入口</span>
               </div>
               <div class="postclose-qa-shell">
-                <textarea rows="4" placeholder="例如：今天我的持仓里谁最偏离主线？明天应该先看哪些验证条件？"></textarea>
+                <textarea rows="4" data-postclose-qa-input placeholder="例如：今天我的持仓里谁最偏离主线？明天应该先看哪些验证条件？"></textarea>
                 <div class="button-row">
-                  <button class="secondary-button" type="button" disabled>清空</button>
-                  <button class="primary-button" type="button" disabled>发送问题（后续接入）</button>
+                  <button class="secondary-button" type="button" data-postclose-qa-clear>清空</button>
+                  <button class="primary-button" type="button" data-postclose-qa-submit>发送问题</button>
+                </div>
+                <div class="postclose-qa-result is-hidden" data-postclose-qa-result>
+                  <div class="postclose-llm-hint">
+                    <span>问答解释状态</span>
+                    <strong data-postclose-qa-status>--</strong>
+                  </div>
+                  <article class="postclose-qa-card">
+                    <span>回答</span>
+                    <p data-postclose-qa-answer>--</p>
+                  </article>
+                  <div class="postclose-qa-grid">
+                    <article>
+                      <span>证据</span>
+                      <ul data-postclose-qa-evidence>
+                        <li>--</li>
+                      </ul>
+                    </article>
+                    <article>
+                      <span>继续追问</span>
+                      <ul data-postclose-qa-followups>
+                        <li>--</li>
+                      </ul>
+                    </article>
+                  </div>
                 </div>
               </div>
             </section>
@@ -791,13 +850,193 @@
             <button class="secondary-button" type="button" data-refresh-history>刷新列表</button>
           </div>
           <section class="panel">
-            <div class="history-list" data-history-list>
-              <article>
-                <strong>等待加载</strong>
-                <span>执行一次筛选或复盘后，这里会展示本地结果文件与记录。</span>
-                <button type="button" disabled>打开</button>
-              </article>
+            <details class="collapsible-panel">
+              <summary class="collapsible-summary">
+                <div>
+                  <strong>盘前与盘后历史记录</strong>
+                  <span>点击展开或收起最近的结果列表</span>
+                </div>
+              </summary>
+              <div class="collapsible-body">
+                <div class="history-list" data-history-list>
+                  <article>
+                    <strong>等待加载</strong>
+                    <span>执行一次筛选或复盘后，这里会展示本地结果文件与记录。</span>
+                    <button type="button" disabled>打开</button>
+                  </article>
+                </div>
+              </div>
+            </details>
+          </section>
+        </section>
+        <section class="view-section is-hidden" id="backtest-workbench" data-section="backtest-workbench" data-mode-scope="backtest">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Backtest</p>
+              <h2>策略回测工作台</h2>
             </div>
+            <div class="button-row">
+              <button class="secondary-button" type="button" data-jump="screener">复用筛选条件</button>
+              <button class="primary-button" type="button" data-run-backtest>开始回测</button>
+            </div>
+          </div>
+          <section class="panel">
+            <div class="panel-head">
+              <h3>回测策略输入</h3>
+              <span class="panel-tag" data-backtest-strategy-status>默认可直接复用盘前筛选条件，也可在这里单独输入回测策略。</span>
+            </div>
+            <div class="postclose-llm-hint backtest-strategy-box">
+              <span>自然语言策略</span>
+              <strong>例如：反转策略、缩量回调后放量突破、近 20 日新高且量比放大的票。</strong>
+              <textarea
+                rows="3"
+                data-backtest-strategy-query
+                placeholder="输入一句回测策略，系统会先翻译成量化条件，再拿历史数据去跑回测。"
+              ></textarea>
+              <div class="button-row">
+                <button class="secondary-button" type="button" data-backtest-strategy-clear>清空策略</button>
+                <button class="secondary-button" type="button" data-backtest-strategy-parse>生成回测条件</button>
+                <button class="secondary-button" type="button" data-jump="screener">去盘前页精调条件</button>
+              </div>
+              <div class="condition-list" data-backtest-strategy-summary>
+                <h4>当前回测条件</h4>
+                <span>你还没有单独设置回测策略；如果直接点开始回测，系统会读取盘前页当前的筛选条件。</span>
+              </div>
+              <div class="condition-list" data-backtest-strategy-explanation>
+                <h4>策略如何执行</h4>
+                <span>系统会先把自然语言翻译成量化条件，再在历史窗口里按交易日逐日筛选候选股。</span>
+                <span>每次选出前 N 只股票，在下一个交易日开盘附近视作买入，并按你设置的持有周期卖出。</span>
+              </div>
+            </div>
+          </section>
+          <section class="panel">
+            <div class="panel-head">
+              <h3>回测参数</h3>
+              <span class="panel-tag" data-backtest-status>读取当前筛选条件后可直接执行历史回测。</span>
+            </div>
+            <div class="form-grid">
+              <label>
+                <span>历史窗口</span>
+                <select data-backtest-field="history_years">
+                  <option value="1">1 年</option>
+                  <option value="3" selected>3 年</option>
+                  <option value="5">5 年</option>
+                </select>
+              </label>
+              <label>
+                <span>持有周期</span>
+                <select data-backtest-field="holding_days">
+                  <option value="1">1 天</option>
+                  <option value="3" selected>3 天</option>
+                  <option value="5">5 天</option>
+                </select>
+                <small class="field-help">意思是: 某天满足策略后，默认下一交易日买入，再持有 1 / 3 / 5 个交易日后卖出。</small>
+              </label>
+              <label>
+                <span>每轮取前 N 只</span>
+                <select data-backtest-field="top_n">
+                  <option value="5">Top 5</option>
+                  <option value="10" selected>Top 10</option>
+                  <option value="20">Top 20</option>
+                </select>
+              </label>
+            </div>
+          </section>
+        </section>
+
+        <section class="view-section is-hidden" id="backtest-results" data-section="backtest-results" data-mode-scope="backtest">
+          <div class="section-head">
+            <div>
+              <p class="eyebrow">Backtest Result</p>
+              <h2>回测结果</h2>
+            </div>
+            <div class="button-row">
+              <button class="secondary-button" type="button" data-refresh-backtest-history>刷新记录</button>
+              <button class="secondary-button" type="button" data-jump="backtest-workbench">返回参数区</button>
+            </div>
+          </div>
+
+          <div class="metric-grid" data-backtest-metrics>
+            <article class="metric-card">
+              <span>累计收益</span>
+              <strong>--</strong>
+              <p>执行一次回测后这里会显示核心指标。</p>
+            </article>
+            <article class="metric-card">
+              <span>年化收益</span>
+              <strong>--</strong>
+              <p>执行一次回测后这里会显示核心指标。</p>
+            </article>
+            <article class="metric-card warning">
+              <span>最大回撤</span>
+              <strong>--</strong>
+              <p>执行一次回测后这里会显示核心指标。</p>
+            </article>
+            <article class="metric-card">
+              <span>胜率 / 盈亏比</span>
+              <strong>--</strong>
+              <p>执行一次回测后这里会显示核心指标。</p>
+            </article>
+          </div>
+
+          <div class="dashboard-grid">
+            <section class="panel">
+              <div class="panel-head">
+                <h3>策略与执行信息</h3>
+                <span class="panel-tag">结构化说明</span>
+              </div>
+              <div data-backtest-meta></div>
+            </section>
+            <section class="panel">
+              <div class="panel-head">
+                <h3>收益曲线预览</h3>
+                <span class="panel-tag">MVP</span>
+              </div>
+              <div data-backtest-curve></div>
+            </section>
+          </div>
+
+          <div class="dashboard-grid">
+            <section class="panel">
+              <div class="panel-head">
+                <h3>年度收益</h3>
+                <span class="panel-tag">Yearly</span>
+              </div>
+              <div class="source-list" data-backtest-yearly>
+                <div class="source-row"><strong>暂无年度拆分</strong><em>请先执行回测</em></div>
+              </div>
+            </section>
+            <section class="panel">
+              <div class="panel-head">
+                <h3>样本交易</h3>
+                <span class="panel-tag">Recent Trades</span>
+              </div>
+              <div class="brief-list" data-backtest-trades>
+                <article class="brief-list-item">
+                  <strong>暂无样本交易</strong>
+                  <p>执行回测后这里会展示最近的交易样本。</p>
+                </article>
+              </div>
+            </section>
+          </div>
+
+          <section class="panel">
+            <details class="collapsible-panel">
+              <summary class="collapsible-summary">
+                <div>
+                  <strong>回测历史</strong>
+                  <span>点击展开或收起本地保存记录</span>
+                </div>
+              </summary>
+              <div class="collapsible-body">
+                <div class="brief-list" data-backtest-history>
+                  <article class="brief-list-item">
+                    <strong>暂无回测记录</strong>
+                    <p>执行一次回测后，这里会显示本地保存记录。</p>
+                  </article>
+                </div>
+              </div>
+            </details>
           </section>
         </section>
       </main>
@@ -813,6 +1052,8 @@
 
     <script src="./app.js"></script>
     <script src="./api-bridge.js"></script>
+    <script src="./backtest-bridge.js" data-backtest-bridge="true"></script>
     <script src="./postclose-bridge.js"></script>
+    <script src="./postclose-enhancements.js"></script>
   </body>
 </html>

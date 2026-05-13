@@ -505,6 +505,32 @@
     setText(nodes.updatedAt, formatSourceValue(sourceNotes.news_updated_at || payload.news?.updated_at));
   }
 
+  function renderNextDayExpectation(payload) {
+    const block = payload.next_day_expectation || {};
+    const sessionMeta = payload.session_meta || {};
+    const watchpoints = Array.isArray(block.watchpoints) ? block.watchpoints : [];
+    const risks = Array.isArray(block.risk_triggers) ? block.risk_triggers : [];
+    const order = Array.isArray(block.execution_order) ? block.execution_order : [];
+
+    setText(qs("[data-nextday-label]"), block.label || sessionMeta.action_label || "次日预期");
+    setText(qs("[data-nextday-headline]"), block.headline || "等待生成结构化预期");
+    setText(qs("[data-nextday-session-tag]"), sessionMeta.label || "结构化输出");
+
+    const renderList = (selector, items, fallback) => {
+      const node = qs(selector);
+      if (!node) {
+        return;
+      }
+      node.innerHTML = items.length
+        ? items.map((item) => `<li>${String(item || "").trim()}</li>`).join("")
+        : `<li>${fallback}</li>`;
+    };
+
+    renderList("[data-nextday-watchpoints]", watchpoints, "等待生成观察重点");
+    renderList("[data-nextday-risks]", risks, "等待生成风险触发");
+    renderList("[data-nextday-order]", order, "等待生成执行顺序");
+  }
+
   function renderTradeDate(payload) {
     const tag = qs("#postclose-review .panel-head .panel-tag");
     if (!tag) {
@@ -523,6 +549,7 @@
     renderEvidence(payload);
     renderDetailReport(payload);
     renderSourceNotes(payload);
+    renderNextDayExpectation(payload);
   }
 
   function collectHoldingPayload() {

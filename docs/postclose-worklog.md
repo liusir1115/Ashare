@@ -1,341 +1,124 @@
-# 盘后模式 Worklog
+# Post-Close Worklog
+
+## Current Scope
 
-## 文档定位
+This worklog is the single rolling record for the post-close mode.
 
-这份文档是盘后模式当前唯一持续维护的工作记录。
-它统一承接三类信息：
+Current confirmed scope:
+- Market review generation
+- Holdings input and holdings review
+- Operations input and operations review
+- Next-day observation / execution hints
+- Post-close Q&A
+- Local demo first
+
+Out of scope for now:
+- Broker account connection
+- Auto-sync positions or trades
+- Intraday real-time replay
+- Order placement
+- History center as a separate product module
 
-- 已确认的正式需求边界
-- 当前开发进度与阶段目标
-- 已完成的关键实现、修复与下一步事项
-
----
-
-## 当前目标
-
-盘后模式不是再做一次盘前选股，而是完成一次从市场到持仓、再到操作的完整复盘。
-
-当前正式目标：
-
-1. 自动生成当日市场总复盘
-2. 支持用户手动录入持仓
-3. 支持用户手动录入当日操作
-4. 生成持仓复盘报告
-5. 生成操作复盘报告
-6. 输出次日观察与执行建议
-7. 支持 Web 页面展示与 Markdown 导出
-
----
-
-## 当前边界
-
-当前明确不做：
-
-- 券商账户自动接入
-- 自动同步实时持仓
-- 自动同步当日成交
-- 盘中实时复盘
-- 自动下单
-- 小程序优先形态
-- 历史复盘中心
-
----
-
-## 当前架构
-
-盘后模式按两层设计：
-
-### 第一层：事实层
-
-由真实数据源和规则整理完成，不交给大模型自由发挥。
-
-负责输出：
-
-- 市场环境
-- 资金流向
-- 连板与情绪结构
-- 板块热度与轮动
-- 个股上下文事实
-
-### 第二层：解释层
-
-由 LLM 基于结构化事实层结果完成。
-
-负责输出：
-
-- 一句话总收口
-- 主线 / 次主线 / 风险边界判断
-- 持仓点评
-- 操作复盘
-- 次日执行建议
-- 盘后问答
-
----
-
-## 当前报告结构
-
-市场总复盘当前按 8 章结构输出：
-
-1. 一句话总收口
-2. 盘型 / 环境
-3. 资金流证据
-4. 主线 / 次主线 / 风险边界 / 次日重点
-5. 主线与轮动拆解
-6. 市场情绪与连板结构
-7. 原因拆解
-8. 次日执行卡
-
----
-
-## 当前页面结构
-
-当前保留两个核心页面：
-
-1. 首页工作台
-2. 盘后复盘页
-
-当前页面原则：
-
-- 首页只做摘要和入口
-- 盘后页承接完整市场复盘、持仓录入、操作录入和后续 AI 结果位
-- 用户不需要看到“页面骨架”“当前阶段”“产品介绍”式提示
-
----
-
-## 当前数据源方案
-
-### 市场事实层
-
-当前以 `Tushare` 为核心事实源。
-
-当前重点接入字段：
-
-- `moneyflow_ind_ths`
-- `moneyflow_cnt_ths`
-- `limit_list_d`
-- `limit_cpt_list`
-- `ths_hot`
-- `daily`
-- `daily_basic`
-
-### 新闻层
-
-当前新闻层允许使用非 Tushare 数据补充。
-
-当前实际运行策略：
-
-1. 优先尝试财联社重点电报
-2. 如不可用，则回退到东方财富财经早报
-
-页面必须显式展示新闻来源和更新时间，避免用户误以为所有信息都来自同一源。
-
----
-
-## 已完成实现
-
-### 1. 盘后市场总复盘 API 已跑通
-
-当前已接通：
-
-- `GET /api/postclose/market-review`
-
-当前接口可返回：
-
-- `market`
-- `postclose_facts`
-- `fact_summary`
-- `news`
-- `report_detail`
-- `llm_status`
-
-### 2. 盘后事实层已接通真实数据
-
-当前已能稳定输出：
-
-- 行业资金净流入 / 净流出前排
-- 概念资金净流入 / 净流出前排
-- 连板题材聚焦
-- 热门题材摘要
-- 市场快照事实
-
-### 3. 市场总复盘解释层已正式接入 LLM
-
-当前状态：
-
-- DeepSeek 已接通
-- 通过用户提供的代理地址调用
-- 当前模型使用 `deepseek-v4-flash`
-- 页面会显式显示 `llm_status`
-
-当前结果：
-
-- 市场总复盘的 8 章正文不再只是规则占位文本
-- 一句话总收口、原因拆解、次日执行卡已能由模型基于事实层生成
-- 事实层与解释层仍保持分离，模型不直接替代事实取数
-
-### 4. 完整简报详情已接入前端
-
-此前问题：
-
-- 页面只显示非常短的一两句摘要
-- “完整简报”实际上仍是前端自己拼的占位文本
-
-现已完成：
-
-- 前端直接消费后端 `report_detail`
-- “查看完整简报”会展开真实的 8 章内容
-- 不再依赖前端拼接假报告
-
-### 5. 页面结构已升级
-
-当前盘后页已补齐：
-
-- 一句话总收口卡片
-- 事实锚点条
-- 主线 / 次主线 / 风险边界 / 次日重点摘要卡
-- 证据卡
-- 完整简报区
-- 数据来源与更新时间区
-
-### 6. 数据源透明化已补上
-
-当前页面会直接显示：
-
-- 交易日
-- 市场快照来源
-- 盘后事实来源
-- 新闻来源
-- 新闻更新时间
-
-目的：
-
-- 明确告诉用户当前报告不是演示数据
-- 避免“数据来源不明”的旧问题
-
----
-
-## 本轮关键修复
-
-### 修复 1：后端 JSON 因 NaN 报错
-
-已修复问题：
-
-- `rank_reason: NaN` 等字段导致前端报错
-- 页面曾出现 `Unexpected token 'N'`
-
-处理方式：
-
-- 后端统一对 `NaN` / `inf` 做清洗
-- 返回严格 JSON
-
-### 修复 2：最高板错误
-
-已修复问题：
-
-- 最高板曾错误显示为 `0`
-
-原因：
-
-- 代码读取字段不正确
-- `limit_cpt_list` 实际可用字段是 `days / up_stat`
-
-当前结果：
-
-- `highest_board` 已能稳定显示真实值
-
-### 修复 3：交易日判定错误
-
-已修复问题：
-
-- 刷新后一度出现错误交易日
-
-原因：
-
-- `trade_cal` 返回顺序与代码假设不一致
-
-处理方式：
-
-- 对 `trade_cal` 先按 `cal_date` 升序排序
-- 再判断是否应取当日或前一交易日
-
-当前结果：
-
-- 当前盘后接口返回交易日已修正
-
-### 修复 4：涨停家数错误显示为 0
-
-已修复问题：
-
-- 页面曾显示 `涨停 0 / 最高板非 0`
-
-原因：
-
-- `limit_list_d` 某些交易日会返回空表
-
-处理方式：
-
-- 当 `limit_list_d` 当天空表时
-- 回退使用同一交易日市场快照里的涨停计数
-
-当前结果：
-
-- 情绪锚点不会再因为单一接口空表而明显失真
-
----
-
-## 当前状态
-
-截至目前，盘后市场总复盘已经具备一个可运行的本地 demo：
-
-- 能调用真实 Tushare 数据
-- 能补充真实新闻源
-- 能生成结构化市场复盘
-- 能在前端展示摘要与完整简报
-- 能标明数据来源
-- 能通过 DeepSeek 生成市场复盘解释层
-
-当前仍在进行中：
-
-- 持仓复盘链路尚未正式接通
-- 操作复盘链路尚未正式接通
-- 盘后问答入口尚未接通
-
----
-
-## 下一步
-
-下一步正式进入：
-
-### Phase 3：持仓复盘
-
-目标：
-
-1. 接入持仓录入表单提交
-2. 基于市场总复盘上下文补齐持仓事实
-3. 输出组合总评与个股逐条点评
-
-### Phase 4：操作复盘
-
-目标：
-
-1. 在市场总复盘与持仓上下文上叠加当日操作记录
-2. 输出整体操作总评与单笔操作评价
-
----
-
-## 文件瘦身原则
-
-继续执行以下规则：
-
-1. 不再保留多个并行盘后草案
-2. 已完成使命的计划稿、草图稿、补充稿并入本 `worklog`
-3. 临时脚本和实验脚本用完即删，避免堆积
-4. 文件职责尽量单一，前后端逻辑尽量拆平
-
----
-
-## 当前结论
-
-当前已经不缺“盘后页面骨架”，也不缺“真实数据基础”。
-市场总复盘这一段已经进入“事实层 + LLM 解释层”联动阶段。
-现在最该做的，是把同样的模式继续接到持仓复盘，再接到操作复盘，而不是继续堆占位 UI。
+## Current Architecture
+
+The post-close mode now follows a two-layer structure:
+
+1. Fact layer
+- Tushare as the main structured market data source
+- Supplemental news / topic sources when needed
+- Deterministic market facts, flows, limit structure, hotspots, and stock context
+
+2. Explanation layer
+- DeepSeek generates readable conclusions on top of the structured facts
+- LLM never replaces the fact layer
+- All LLM outputs must remain traceable to supplied context
+
+## What Was Finished Before This Round
+
+- Post-close market review route and page flow were already connected
+- Holdings review already had fallback + LLM mode
+- Operations input UI already supported batch entry
+- Post-close Q&A route already existed
+- Session split between `postclose` and `midday` already existed
+- Context caches already persisted under `result/userdata`
+
+## What Was Finished In This Round
+
+### 1. Operations review is now connected to LLM
+
+File:
+- [postclose_operations_service.py](/C:/Users/LENOVO/Documents/Codex/2026-05-02/codex-ai/Ashare/akshare_backend/postclose_operations_service.py)
+- [postclose_operations_llm_service.py](/C:/Users/LENOVO/Documents/Codex/2026-05-02/codex-ai/Ashare/akshare_backend/postclose_operations_llm_service.py)
+
+What changed:
+- `操作复盘` no longer stops at fallback-only review
+- backend now follows the same pattern as holdings review:
+  - validate input
+  - build market context
+  - generate fallback review
+  - call DeepSeek when configured
+  - merge LLM result with fallback facts
+  - save final review into context cache
+
+### 2. Operations review now preserves fact fields
+
+What changed:
+- after LLM returns text, the service merges it back with fallback item facts
+- this avoids losing fields like `industry` or other deterministic context
+
+### 3. LLM prompt for operations review was rebuilt cleanly
+
+Why:
+- the previous file had encoding noise and was harder to maintain
+- the new prompt is explicit about:
+  - using only supplied facts
+  - not inventing market details
+  - keeping buy/sell direction consistent
+  - returning strict JSON
+
+### 4. Direction consistency was hardened
+
+What changed:
+- operations passed to the LLM now include normalized `side_label` values
+- prompt explicitly tells the model to obey that label
+- this reduces the chance of the model describing a sell as a buy or vice versa
+
+### 5. Runtime garbage was cleaned
+
+What changed:
+- removed generated `__pycache__` under `akshare_backend`
+
+## Validation Done
+
+Completed checks:
+- `python -m compileall akshare_backend`
+- direct local invocation of `build_postclose_operations_review(...)`
+- forced refresh run to confirm LLM path is actually used
+
+Observed result:
+- `llm_status.used = true`
+- model returned structured operations review
+- no backend errors in the forced-refresh test
+
+## Current State After This Round
+
+Working now:
+- Market review
+- Holdings review
+- Operations review with LLM
+- Post-close Q&A entry
+- Cached local demo flow
+
+Still worth improving next:
+- tighten operation-review prompt quality further so wording is less noisy
+- improve UI readability and spacing for long reports
+- strengthen concept / driver evidence for holdings review
+- prepare cloud deployment path after local demo stabilizes
+
+## File Hygiene Rule
+
+Continue following these rules:
+- remove temporary experiment scripts after use
+- keep services flat and single-purpose
+- archive things only when they may still matter later
+- do not let runtime artifacts accumulate in source directories

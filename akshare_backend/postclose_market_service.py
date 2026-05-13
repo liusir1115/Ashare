@@ -10,12 +10,14 @@ try:
     from .news_provider import fetch_news_snapshot
     from .postclose_fact_builder import build_postclose_fact_summary
     from .postclose_llm_service import generate_postclose_report_detail_with_llm
+    from .postclose_session_service import build_market_expectation, build_session_meta, normalize_review_session
     from .postclose_tushare_provider import fetch_postclose_facts
 except ImportError:
     from market_data_provider import fetch_market_snapshot
     from news_provider import fetch_news_snapshot
     from postclose_fact_builder import build_postclose_fact_summary
     from postclose_llm_service import generate_postclose_report_detail_with_llm
+    from postclose_session_service import build_market_expectation, build_session_meta, normalize_review_session
     from postclose_tushare_provider import fetch_postclose_facts
 
 
